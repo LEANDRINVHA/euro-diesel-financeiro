@@ -2,79 +2,76 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>EURO DIESEL | Contabilidade de Precisão</title>
+    <title>EURO DIESEL | Business Intelligence Financeiro</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
     <script src="https://unpkg.com/tesseract.js@v4.0.1/dist/tesseract.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
-        .card-stats { border-top: 4px solid #3b82f6; transition: transform 0.2s; }
-        .card-stats:hover { transform: translateY(-5px); }
         .bg-euro { background-color: #0f172a; }
+        .card-shadow { box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); }
+        .gradient-blue { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); }
     </style>
 </head>
-<body class="bg-slate-50 min-h-screen">
+<body class="bg-slate-100 min-h-screen pb-20">
 
-    <nav class="bg-slate-900 text-white p-4 shadow-2xl">
+    <header class="gradient-blue text-white p-8 mb-8 shadow-2xl border-b border-blue-500/20">
         <div class="container mx-auto flex justify-between items-center">
             <div>
-                <span class="text-2xl font-black tracking-widest text-blue-400">EURO DIESEL</span>
-                <span class="ml-2 text-xs uppercase tracking-tighter text-slate-400">Sistema Master de Recebíveis</span>
+                <h1 class="text-3xl font-black tracking-tighter">EURO DIESEL <span class="text-blue-400 font-light">BI</span></h1>
+                <p class="text-slate-400 text-xs uppercase tracking-widest mt-1">Inteligência Mecatrônica aplicada ao Financeiro</p>
             </div>
-            <div class="font-bold border-l pl-4 border-slate-700 uppercase">Leandrin®</div>
-        </div>
-    </nav>
-
-    <main class="container mx-auto py-8 px-4">
-        <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8 text-center">
-            <div class="bg-white p-4 rounded-xl shadow card-stats">
-                <p class="text-xs text-gray-500 font-bold uppercase">Hoje</p>
-                <h2 id="valor-hoje" class="text-xl font-black text-blue-600">R$ 0,00</h2>
-            </div>
-            <div class="bg-white p-4 rounded-xl shadow card-stats">
-                <p class="text-xs text-gray-500 font-bold uppercase">Esta Semana</p>
-                <h2 id="valor-semana" class="text-xl font-black text-blue-600">R$ 0,00</h2>
-            </div>
-            <div class="bg-white p-4 rounded-xl shadow card-stats">
-                <p class="text-xs text-gray-500 font-bold uppercase">Este Mês</p>
-                <h2 id="valor-mes" class="text-xl font-black text-blue-600">R$ 0,00</h2>
-            </div>
-            <div class="bg-white p-4 rounded-xl shadow card-stats">
-                <p class="text-xs text-gray-500 font-bold uppercase">Este Ano</p>
-                <h2 id="valor-ano" class="text-xl font-black text-blue-600">R$ 0,00</h2>
-            </div>
-            <div class="bg-white p-4 rounded-xl shadow card-stats border-t-green-500">
-                <p class="text-xs text-gray-500 font-bold uppercase">Próx. 12 Meses</p>
-                <h2 id="valor-futuro" class="text-xl font-black text-green-600">R$ 0,00</h2>
+            <div class="text-right">
+                <span class="block text-[10px] text-slate-400 font-bold uppercase">Gestor Responsável</span>
+                <span class="text-lg font-bold text-blue-100">Leandrin®</span>
             </div>
         </div>
+    </header>
 
-        <div class="bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
-            <div class="p-6 bg-slate-50 border-b flex justify-between items-center">
-                <h3 class="font-bold text-slate-800 uppercase flex items-center gap-2 text-sm">
-                    <span class="w-3 h-3 bg-blue-500 rounded-full"></span> Detalhamento Contábil
-                </h3>
-                <div class="flex gap-2">
-                    <input type="file" id="pdf-upload" class="hidden" accept="application/pdf">
-                    <label for="pdf-upload" class="bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-bold cursor-pointer hover:bg-black transition">
-                        📥 Importar PDF (IA Scanner)
+    <main class="container mx-auto px-4">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <div class="lg:col-span-2 bg-white p-6 rounded-2xl card-shadow border border-slate-200">
+                <h3 class="text-sm font-black text-slate-700 uppercase mb-4">Previsão de Recebimento (Próximos 6 meses)</h3>
+                <canvas id="financeChart" height="120"></canvas>
+            </div>
+            
+            <div class="bg-white p-6 rounded-2xl card-shadow border border-slate-200 flex flex-col justify-between">
+                <div>
+                    <h3 class="text-sm font-black text-slate-700 uppercase mb-4">Ações Rápidas</h3>
+                    <label class="w-full mb-3 bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-xl font-bold text-center cursor-pointer block transition shadow-lg">
+                        📥 ESCANEAR NOVO BOLETO
+                        <input type="file" id="pdf-upload" class="hidden" accept="application/pdf">
                     </label>
+                    <button onclick="processarFinanceiro()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 p-3 rounded-xl font-bold transition">
+                        🔄 ATUALIZAR DASHBOARD
+                    </button>
+                </div>
+                <div class="mt-6 pt-6 border-t border-slate-100">
+                    <p class="text-[10px] text-slate-400 font-bold uppercase">Meta Mensal Euro Diesel</p>
+                    <div class="w-full bg-slate-100 h-3 rounded-full mt-2 overflow-hidden">
+                        <div class="bg-blue-500 h-full" style="width: 65%"></div>
+                    </div>
                 </div>
             </div>
+        </div>
 
+        <div class="bg-white rounded-2xl card-shadow border border-slate-200 overflow-hidden">
+            <div class="p-6 bg-slate-50 border-b flex justify-between items-center">
+                <h3 class="font-black text-slate-700 uppercase tracking-widest text-xs italic">Listagem de Auditoria e Liquidação</h3>
+            </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-left">
                     <thead>
-                        <tr class="bg-slate-100 text-slate-600 text-[10px] uppercase font-black">
-                            <th class="p-4">Status / Cliente</th>
-                            <th class="p-4 text-center">Vencimento</th>
-                            <th class="p-4 text-right">Valor Nominal</th>
-                            <th class="p-4 text-right">Multa (5%)</th>
-                            <th class="p-4 text-right">Juros (0,17%/d)</th>
-                            <th class="p-4 text-right bg-blue-50 text-blue-700 font-black">Líquido Atualizado</th>
+                        <tr class="bg-slate-100 text-[10px] font-black text-slate-500 uppercase">
+                            <th class="p-5">Cliente / Vencimento</th>
+                            <th class="p-5 text-right">Valor Original</th>
+                            <th class="p-5 text-right">Encargos</th>
+                            <th class="p-5 text-right font-bold text-blue-600">Total Atualizado</th>
+                            <th class="p-5 text-center">Ação</th>
                         </tr>
                     </thead>
-                    <tbody id="tabela-contabil" class="divide-y divide-slate-100 text-xs"></tbody>
+                    <tbody id="tabela-contabil" class="divide-y divide-slate-100"></tbody>
                 </table>
             </div>
         </div>
@@ -85,72 +82,28 @@
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNmcGRiemZhaXlyaHdpdGlmbGJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyNTg0MzgsImV4cCI6MjA5MDgzNDQzOH0.t84JuNn-qqBJyb-IPK0x4fbYTfsJK_R80Rp4SBpsupM';
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+        let myChart;
 
-        // === FUNÇÃO 1: PROCESSAMENTO DE PDF COM IA ===
-        document.getElementById('pdf-upload').addEventListener('change', async (event) => {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            alert("Leandrin®, a IA está auditando o boleto... Aguarde.");
-
-            const reader = new FileReader();
-            reader.onload = async function() {
-                const typedarray = new Uint8Array(this.result);
-                const pdf = await pdfjsLib.getDocument(typedarray).promise;
-                const page = await pdf.getPage(1);
-                
-                const canvas = document.createElement('canvas');
-                const context = canvas.getContext('2d');
-                const viewport = page.getViewport({ scale: 2.5 });
-                canvas.height = viewport.height;
-                canvas.width = viewport.width;
-                await page.render({ canvasContext: context, viewport: viewport }).promise;
-
-                const { data: { text, confidence } } = await Tesseract.recognize(canvas, 'por');
-                
-                // Regex para extração
-                const extrairValor = text.match(/R\$\s?(\d+[,.]\d{2})/);
-                const extrairVencimento = text.match(/(\d{2}\/\d{2}\/\d{4})/);
-
-                const boletoAuditado = {
-                    valor_nominal: extrairValor ? parseFloat(extrairValor[1].replace(',', '.')) : 0,
-                    vencimento: extrairVencimento ? converterData(extrairVencimento[1]) : null,
-                    cliente: "CLIENTE IDENTIFICADO VIA IA",
-                    status: 'pendente'
-                };
-
-                if (!boletoAuditado.vencimento || boletoAuditado.valor_nominal <= 0) {
-                    alert("A IA não confirmou os dados. Verifique o PDF.");
-                    return;
-                }
-
-                const { error } = await _supabase.from('controle_financeiro').insert([boletoAuditado]);
-                if (!error) {
-                    alert("Novo boleto salvo!");
-                    processarFinanceiro();
-                }
-            };
-            reader.readAsArrayBuffer(file);
-        });
-
-        function converterData(dataBr) {
-            const [dia, mes, ano] = dataBr.split('/');
-            return `${ano}-${mes}-${dia}`;
+        async function darBaixa(id) {
+            if(!confirm("Confirmar o recebimento deste valor na conta da Euro Diesel?")) return;
+            const { error } = await _supabase.from('controle_financeiro').update({ status: 'pago', data_pagamento: new Date().toISOString() }).eq('id', id);
+            if(!error) processarFinanceiro();
         }
 
-        // === FUNÇÃO 2: RENDERIZAÇÃO E CÁLCULOS CONTÁBEIS ===
         async function processarFinanceiro() {
             const { data, error } = await _supabase.from('controle_financeiro').select('*').order('vencimento', { ascending: true });
             if (error) return;
 
-            let totais = { hoje: 0, semana: 0, mes: 0, ano: 0, futuro: 0 };
             const corpo = document.getElementById('tabela-contabil');
             corpo.innerHTML = '';
+            
+            let mesesMap = {}; // Para o gráfico
             const hoje = new Date(); hoje.setHours(0,0,0,0);
 
             data.forEach(item => {
-                const venci = new Date(item.vencimento + 'T12:00:00'); 
+                if(item.status === 'pago') return; // Filtra apenas o que falta receber
+
+                const venci = new Date(item.vencimento + 'T12:00:00');
                 const diffDias = Math.floor((hoje - venci) / (1000 * 60 * 60 * 24));
                 
                 let multa = 0; let juros = 0;
@@ -160,37 +113,54 @@
                 }
                 const totalFinal = item.valor_nominal + multa + juros;
 
-                // Lógica de Soma dos Cards
-                const diffFuturo = Math.floor((venci - hoje) / (1000 * 60 * 60 * 24));
-                if (diffFuturo === 0) totais.hoje += totalFinal;
-                if (diffFuturo >= 0 && diffFuturo <= 7) totais.semana += totalFinal;
-                if (venci.getMonth() === hoje.getMonth() && venci.getFullYear() === hoje.getFullYear()) totais.mes += totalFinal;
-                if (venci.getFullYear() === hoje.getFullYear()) totais.ano += totalFinal;
-                if (diffFuturo >= 0 && diffFuturo <= 365) totais.futuro += totalFinal;
+                // Agrupar para o gráfico
+                const mesAno = venci.toLocaleString('pt-BR', { month: 'short', year: '2-digit' }).toUpperCase();
+                mesesMap[mesAno] = (mesesMap[mesAno] || 0) + totalFinal;
 
                 corpo.innerHTML += `
-                    <tr class="hover:bg-slate-50 transition">
-                        <td class="p-4 font-bold text-slate-800">
-                            <span class="text-[9px] uppercase ${diffDias > 0 ? 'text-red-500' : 'text-green-500'}">
-                                ${diffDias > 0 ? '● ATRASADO ('+diffDias+'d)' : '● NO PRAZO'}
+                    <tr class="hover:bg-blue-50 transition text-sm">
+                        <td class="p-5">
+                            <span class="text-[9px] font-black uppercase ${diffDias > 0 ? 'text-red-500' : 'text-green-500'}">
+                                ${diffDias > 0 ? '● ATRASADO ' + diffDias + 'D' : '● EM DIA'}
                             </span><br>
-                            ${item.cliente}
+                            <span class="font-bold text-slate-800">${item.cliente}</span><br>
+                            <span class="text-[10px] text-slate-400">${venci.toLocaleDateString('pt-BR')}</span>
                         </td>
-                        <td class="p-4 text-center font-medium">${venci.toLocaleDateString('pt-BR')}</td>
-                        <td class="p-4 text-right">R$ ${item.valor_nominal.toFixed(2)}</td>
-                        <td class="p-4 text-right text-red-500">R$ ${multa.toFixed(2)}</td>
-                        <td class="p-4 text-right text-red-500">R$ ${juros.toFixed(2)}</td>
-                        <td class="p-4 text-right bg-blue-50 font-black text-blue-700">R$ ${totalFinal.toFixed(2)}</td>
+                        <td class="p-5 text-right italic text-slate-400">R$ ${item.valor_nominal.toFixed(2)}</td>
+                        <td class="p-5 text-right text-red-500">R$ ${(multa + juros).toFixed(2)}</td>
+                        <td class="p-5 text-right font-black text-blue-900 bg-blue-50/50">R$ ${totalFinal.toFixed(2)}</td>
+                        <td class="p-5 text-center">
+                            <button onclick="darBaixa(${item.id})" class="bg-green-600 hover:bg-green-700 text-white text-[10px] font-black px-3 py-2 rounded-lg transition uppercase shadow-md">
+                                Recebi
+                            </button>
+                        </td>
                     </tr>`;
             });
 
-            document.getElementById('valor-hoje').innerText = `R$ ${totais.hoje.toFixed(2)}`;
-            document.getElementById('valor-semana').innerText = `R$ ${totais.semana.toFixed(2)}`;
-            document.getElementById('valor-mes').innerText = `R$ ${totais.mes.toFixed(2)}`;
-            document.getElementById('valor-ano').innerText = `R$ ${totais.ano.toFixed(2)}`;
-            document.getElementById('valor-futuro').innerText = `R$ ${totais.futuro.toFixed(2)}`;
+            atualizarGrafico(mesesMap);
         }
 
+        function atualizarGrafico(dados) {
+            const ctx = document.getElementById('financeChart').getContext('2d');
+            if (myChart) myChart.destroy();
+            
+            myChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(dados),
+                    datasets: [{
+                        label: 'Previsão de Recebimento (R$)',
+                        data: Object.values(dados),
+                        backgroundColor: '#3b82f6',
+                        borderRadius: 8
+                    }]
+                },
+                options: { responsive: true, plugins: { legend: { display: false } } }
+            });
+        }
+
+        // ... (Mantenha a função de OCR que te passei anteriormente para o botão importar funcionar)
+        
         processarFinanceiro();
     </script>
 </body>
