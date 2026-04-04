@@ -2,36 +2,41 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>EURO DIESEL | Intelligence BI Master</title>
+    <title>EURO DIESEL | Command Center v2.0</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <style>
-        .bg-euro { background: #0f172a; }
-        .card-bi { background: white; border-radius: 1rem; border: 1px solid #e2e8f0; transition: 0.3s hover; }
-        .card-bi:hover { transform: translateY(-5px); box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
-        .text-master { font-family: 'Inter', sans-serif; letter-spacing: -0.02em; }
-        .status-pill { padding: 2px 8px; border-radius: 99px; font-size: 10px; font-weight: 800; text-transform: uppercase; }
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;800&family=Plus+Jakarta+Sans:wght@300;400;700;800&display=swap');
+        :root { --euro-dark: #020617; --euro-blue: #3b82f6; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; color: #1e293b; }
+        .glass-header { background: rgba(2, 6, 23, 0.95); backdrop-filter: blur(10px); border-bottom: 2px solid var(--euro-blue); }
+        .card-pro { background: white; border-radius: 1.2rem; border: 1px solid #e2e8f0; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .card-pro:hover { transform: scale(1.02); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1); border-color: var(--euro-blue); }
+        .font-mono-euro { font-family: 'JetBrains Mono', monospace; }
+        .bg-gradient-euro { background: linear-gradient(135deg, #1e293b 0%, #020617 100%); }
+        .badge-risco { padding: 3px 10px; border-radius: 6px; font-size: 9px; font-weight: 800; text-transform: uppercase; }
     </style>
 </head>
-<body class="bg-slate-50 min-h-screen text-master">
+<body class="min-h-screen">
 
-    <header class="bg-euro text-white p-6 shadow-2xl border-b border-blue-500/30">
+    <header class="glass-header text-white p-5 sticky top-0 z-50 shadow-xl">
         <div class="container mx-auto flex justify-between items-center">
-            <div>
-                <h1 class="text-2xl font-black">EURO DIESEL <span class="text-blue-500 italic">MECATRÔNICA</span></h1>
-                <div class="flex items-center gap-2">
-                    <span class="h-2 w-2 bg-green-500 rounded-full animate-ping"></span>
-                    <p class="text-blue-300/60 text-[10px] uppercase font-bold tracking-widest">Painel Financeiro | Leandrin®</p>
+            <div class="flex items-center gap-4">
+                <div class="bg-blue-600 p-2 rounded-lg font-black text-xl italic shadow-blue-500/50 shadow-lg">ED</div>
+                <div>
+                    <h1 class="text-xl font-extrabold tracking-tighter">EURO DIESEL <span class="text-blue-400">MASTER 2.0</span></h1>
+                    <p class="text-[9px] uppercase tracking-[0.3em] font-bold text-blue-300/50">Intelligence Division | Leandrin®</p>
                 </div>
             </div>
-            <div class="flex gap-3">
-                <button onclick="gerarRelatorioPDF()" class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg font-bold text-xs border border-slate-600 transition">RELATÓRIO MASTER</button>
-                <label class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg font-bold text-xs cursor-pointer shadow-lg transition">
-                    📥 IMPORTAR BOLETO (IA)
+            <div class="flex items-center gap-4">
+                <div class="hidden md:block text-right mr-4">
+                    <p class="text-[9px] text-slate-400 font-bold uppercase">Operador Atual</p>
+                    <p class="text-xs font-black text-blue-400">LEANDRIN® MASTER ADM</p>
+                </div>
+                <label class="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-xl font-bold text-xs cursor-pointer shadow-lg transition-all flex items-center gap-2">
+                    <span>⚡ SCANNER IA</span>
                     <input type="file" id="pdf-upload" class="hidden" accept="application/pdf">
                 </label>
             </div>
@@ -39,89 +44,83 @@
     </header>
 
     <main class="container mx-auto px-4 py-8">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            <div class="card-bi p-5 border-l-4 border-blue-500">
-                <p class="text-slate-400 text-[10px] font-bold uppercase">Carteira Total</p>
-                <h2 id="total-geral" class="text-2xl font-black text-slate-800">R$ 0,00</h2>
-                <p class="text-[9px] text-slate-400 mt-1">Soma de todos os pendentes</p>
+        
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
+            <div class="card-pro p-6">
+                <p class="text-[10px] font-black text-slate-400 uppercase mb-1">Disponível em Carteira</p>
+                <h2 id="bi-total" class="text-3xl font-black text-slate-900 font-mono-euro">R$ 0,00</h2>
+                <div id="tendencia-total" class="mt-2 text-[10px] font-bold"></div>
             </div>
-            <div class="card-bi p-5 border-l-4 border-emerald-500">
-                <p class="text-slate-400 text-[10px] font-bold uppercase">Liquidez Mensal</p>
-                <h2 id="total-recebido" class="text-2xl font-black text-emerald-600">R$ 0,00</h2>
-                <p id="percent-recebido" class="text-[9px] text-emerald-500 mt-1">0% do projetado atingido</p>
+            <div class="card-pro p-6 bg-gradient-euro text-white">
+                <p class="text-[10px] font-black text-blue-300 uppercase mb-1">Liquidez do Mês</p>
+                <h2 id="bi-pago" class="text-3xl font-black font-mono-euro text-white">R$ 0,00</h2>
+                <div class="w-full bg-slate-700 h-1.5 rounded-full mt-3 overflow-hidden">
+                    <div id="meta-progress" class="bg-blue-400 h-full transition-all duration-1000" style="width: 0%"></div>
+                </div>
             </div>
-            <div class="card-bi p-5 border-l-4 border-red-500">
-                <p class="text-slate-400 text-[10px] font-bold uppercase">Inadimplência Crítica</p>
-                <h2 id="total-atrasado" class="text-2xl font-black text-red-600">R$ 0,00</h2>
-                <p id="taxa-inadimplencia" class="text-[9px] text-red-400 mt-1">Taxa: 0%</p>
+            <div class="card-pro p-6">
+                <p class="text-[10px] font-black text-red-400 uppercase mb-1">Prejuízo / Atraso</p>
+                <h2 id="bi-atraso" class="text-3xl font-black text-red-600 font-mono-euro">R$ 0,00</h2>
+                <p id="risco-alerta" class="text-[9px] font-bold mt-2"></p>
             </div>
-            <div class="card-bi p-5 border-l-4 border-orange-500">
-                <p class="text-slate-400 text-[10px] font-bold uppercase">Ticket Médio</p>
-                <h2 id="ticket-medio" class="text-2xl font-black text-slate-800">R$ 0,00</h2>
-                <p class="text-[9px] text-slate-400 mt-1">Média por cliente</p>
-            </div>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 text-center">
-            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
-                <p class="text-[10px] font-bold text-slate-500 uppercase">Previsão 7 Dias</p>
-                <p id="prev-7" class="text-xl font-black text-blue-600">R$ 0,00</p>
-            </div>
-            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
-                <p class="text-[10px] font-bold text-slate-500 uppercase">Previsão 15 Dias</p>
-                <p id="prev-15" class="text-xl font-black text-blue-700">R$ 0,00</p>
-            </div>
-            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
-                <p class="text-[10px] font-bold text-slate-500 uppercase">Previsão 30 Dias</p>
-                <p id="prev-30" class="text-xl font-black text-slate-800">R$ 0,00</p>
+            <div class="card-pro p-6">
+                <p class="text-[10px] font-black text-slate-400 uppercase mb-1">Projeção Próx. 15 dias</p>
+                <h2 id="bi-proj" class="text-3xl font-black text-blue-600 font-mono-euro">R$ 0,00</h2>
+                <p class="text-[9px] text-slate-400 font-medium mt-2 italic">Estimativa baseada em vencimentos</p>
             </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div class="lg:col-span-2 card-bi overflow-hidden">
-                <div class="p-4 border-b bg-slate-50 flex justify-between items-center">
-                    <h3 class="font-black text-slate-700 text-xs uppercase tracking-tighter">Auditoria de Títulos Ativos</h3>
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            
+            <div class="lg:col-span-8 space-y-6">
+                <div class="flex justify-between items-end px-2">
+                    <h3 class="font-black text-slate-800 text-sm uppercase italic">Títulos em Aberto <span class="text-blue-500">Euro Diesel</span></h3>
                     <div class="flex gap-2">
-                        <button onclick="processarFinanceiro()" class="text-[10px] font-bold text-blue-600 hover:underline">RECARREGAR DADOS</button>
+                        <span class="badge-risco bg-green-100 text-green-700">Baixo Risco</span>
+                        <span class="badge-risco bg-red-100 text-red-700">Inadimplente</span>
                     </div>
                 </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left">
-                        <thead class="bg-slate-100 text-[9px] font-black text-slate-500 uppercase">
+
+                <div class="card-pro overflow-hidden border-none shadow-sm">
+                    <table class="w-full">
+                        <thead class="bg-slate-50 border-b border-slate-100 text-[10px] font-black text-slate-400 uppercase">
                             <tr>
-                                <th class="p-4">Dados do Cliente / Status</th>
-                                <th class="p-4 text-right">Valor c/ Encargos</th>
-                                <th class="p-4 text-center">Ações de Cobrança</th>
+                                <th class="p-5 text-left">Identificação / Score</th>
+                                <th class="p-5 text-center">Vencimento</th>
+                                <th class="p-5 text-right">Valor Líquido</th>
+                                <th class="p-5 text-center">Controle</th>
                             </tr>
                         </thead>
-                        <tbody id="tabela-corpo" class="divide-y divide-slate-100"></tbody>
+                        <tbody id="lista-master" class="divide-y divide-slate-50">
+                            </tbody>
                     </table>
                 </div>
             </div>
 
-            <div class="card-bi p-6 h-fit">
-                <h3 class="font-black text-slate-700 text-xs uppercase mb-6 text-center italic">Saúde Financeira (Fluxo de Caixa)</h3>
-                <canvas id="chartBI"></canvas>
-                <div class="mt-6 pt-6 border-t border-slate-100">
-                    <div class="flex justify-between items-center mb-2">
-                        <span class="text-[10px] font-bold text-slate-400 uppercase">Status do Sistema:</span>
-                        <span class="text-[10px] font-black text-green-500">OPERACIONAL</span>
-                    </div>
-                    <p class="text-[10px] text-slate-400 leading-relaxed">Dados sincronizados em tempo real com a base de dados da <b>Euro Diesel</b>.</p>
+            <div class="lg:col-span-4 space-y-8">
+                <div class="card-pro p-6 bg-white">
+                    <h3 class="text-center font-black text-xs text-slate-700 uppercase mb-6 tracking-widest">Distribuição de Capital</h3>
+                    <canvas id="chartDoughnut" height="250"></canvas>
+                </div>
+
+                <div class="card-pro p-6 bg-gradient-euro text-white">
+                    <h3 class="font-black text-[10px] uppercase mb-4 text-blue-400 tracking-widest">Calendário Master (Abril)</h3>
+                    <div id="calendar-view" class="space-y-3">
+                        </div>
                 </div>
             </div>
+
         </div>
     </main>
 
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
         const _supabase = supabase.createClient('https://sfpdbzfaiyrhwitiflbv.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNmcGRiemZhaXlyaHdpdGlmbGJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyNTg0MzgsImV4cCI6MjA5MDgzNDQzOH0.t84JuNn-qqBJyb-IPK0x4fbYTfsJK_R80Rp4SBpsupM');
-        
-        const MEU_WHATSAPP = "5569981128233";
-        const MEU_NOME = "Leandrin®";
-        const MEU_CARGO = "Gerente Financeiro Master";
 
-        // MOTOR DE IA PARA BOLETOS
+        // VARIÁVEIS MASTER
+        const CONFIG = { whatsapp: "5569981128233", nome: "Leandrin®", cargo: "Gerente Financeiro Master" };
+
+        // --- SCANNER INTELIGENTE ---
         document.getElementById('pdf-upload').addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (!file) return;
@@ -132,42 +131,41 @@
                     const typedarray = new Uint8Array(this.result);
                     const pdf = await pdfjsLib.getDocument(typedarray).promise;
                     const page = await pdf.getPage(1);
-                    const textContent = await page.getTextContent();
-                    const texto = textContent.items.map(s => s.str).join(" ");
+                    const text = (await page.getTextContent()).items.map(s => s.str).join(" ");
 
-                    let cliente = "CLIENTE NOVO";
-                    let valor = 0;
-                    let vencimento = new Date().toISOString().split('T')[0];
+                    let cli = "CLIENTE NOVO";
+                    let val = 0;
+                    let venci = new Date().toISOString().split('T')[0];
 
-                    if (texto.includes("Andreis")) cliente = "ANDREIS TRANSPORTES LTDA";
-                    else if (texto.includes("RODOAMAZONIA")) cliente = "RODOAMAZONIA TRANSPORTE";
+                    if (text.includes("Andreis")) cli = "ANDREIS TRANSPORTES LTDA";
+                    else if (text.includes("RODOAMAZONIA")) cli = "RODOAMAZONIA TRANSPORTE";
                     
-                    const matchValor = texto.match(/(\d{1,3}(\.\d{3})*,\d{2})/);
-                    if (matchValor) valor = parseFloat(matchValor[0].replace('.', '').replace(',', '.'));
+                    const mVal = text.match(/(\d{1,3}(\.\d{3})*,\d{2})/);
+                    if (mVal) val = parseFloat(mVal[0].replace('.', '').replace(',', '.'));
 
-                    const matchData = texto.match(/(\d{2}\/\d{2}\/\d{4})/g);
-                    if (matchData) {
-                        const dStr = matchData[matchData.length - 1];
-                        const [d, m, a] = dStr.split('/');
-                        vencimento = `${a}-${m}-${d}`;
+                    const mData = text.match(/(\d{2}\/\d{2}\/\d{4})/g);
+                    if (mData) {
+                        const [d, m, a] = mData[mData.length - 1].split('/');
+                        venci = `${a}-${m}-${d}`;
                     }
 
-                    await _supabase.from('controle_financeiro').insert([{ cliente: cliente.toUpperCase(), valor_nominal: valor, vencimento: vencimento, status: 'pendente' }]);
-                    processarFinanceiro();
-                } catch (err) { alert("Erro IA: " + err.message); }
+                    await _supabase.from('controle_financeiro').insert([{ cliente: cli.toUpperCase(), valor_nominal: val, vencimento: venci, status: 'pendente' }]);
+                    carregarPainel();
+                } catch (e) { alert("ERRO SCAN: " + e.message); }
             };
             reader.readAsArrayBuffer(file);
         });
 
-        async function processarFinanceiro() {
+        // --- CORE DO SISTEMA ---
+        async function carregarPainel() {
             const { data, error } = await _supabase.from('controle_financeiro').select('*').order('vencimento', { ascending: true });
             if (error) return;
 
-            const corpo = document.getElementById('tabela-corpo');
-            corpo.innerHTML = '';
-            
-            let bi = { total: 0, atrasado: 0, recebido: 0, p7: 0, p15: 0, p30: 0, count: 0 };
+            let stats = { total: 0, pago: 0, atraso: 0, proj15: 0, count: 0 };
+            let s1=0, s2=0, s3=0, s4=0; // Semanas
             const hoje = new Date(); hoje.setHours(0,0,0,0);
+            const lista = document.getElementById('lista-master');
+            lista.innerHTML = '';
 
             data.forEach(item => {
                 const venci = new Date(item.vencimento + 'T12:00:00');
@@ -175,92 +173,116 @@
                 const multa = (diff > 0 && item.status !== 'pago') ? (item.valor_nominal * 0.05) + (item.valor_nominal * 0.0017 * diff) : 0;
                 const valorFinal = item.valor_nominal + multa;
 
-                if(item.status === 'pago') {
-                    if(venci.getMonth() === hoje.getMonth()) bi.recebido += item.valor_nominal;
+                if (item.status === 'pago') {
+                    stats.pago += item.valor_nominal;
                 } else {
-                    bi.total += valorFinal;
-                    bi.count++;
-                    if(diff > 0) bi.atrasado += valorFinal;
-                    
-                    // Lógica de Previsão Master
-                    const diasParaVencer = -diff;
-                    if(diasParaVencer >= 0 && diasParaVencer <= 7) bi.p7 += valorFinal;
-                    if(diasParaVencer >= 0 && diasParaVencer <= 15) bi.p15 += valorFinal;
-                    if(diasParaVencer >= 0 && diasParaVencer <= 30) bi.p30 += valorFinal;
+                    stats.total += valorFinal;
+                    stats.count++;
+                    if (diff > 0) stats.atraso += valorFinal;
+                    if (-diff >= 0 && -diff <= 15) stats.proj15 += valorFinal;
 
-                    corpo.innerHTML += `
-                        <tr class="hover:bg-slate-50 transition">
-                            <td class="p-4">
-                                <div class="flex flex-col">
-                                    <span class="status-pill w-fit ${diff > 0 ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'}">
-                                        ${diff > 0 ? 'Atrasado ' + diff + ' dias' : 'Em Dia'}
-                                    </span>
-                                    <b class="text-slate-800 text-sm mt-1 uppercase">${item.cliente}</b>
-                                    <span class="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">Vencimento: ${venci.toLocaleDateString('pt-BR')}</span>
+                    // Lógica Calendário
+                    const dia = venci.getDate();
+                    if (dia <= 7) s1 += valorFinal;
+                    else if (dia <= 14) s2 += valorFinal;
+                    else if (dia <= 21) s3 += valorFinal;
+                    else s4 += valorFinal;
+
+                    lista.innerHTML += `
+                        <tr class="transition border-b border-slate-50 hover:bg-blue-50/50">
+                            <td class="p-5">
+                                <div class="flex items-center gap-3">
+                                    <div class="h-8 w-8 rounded-full ${diff > 5 ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'} flex items-center justify-center font-black text-xs">
+                                        ${item.cliente.substring(0,1)}
+                                    </div>
+                                    <div>
+                                        <b class="text-slate-800 text-sm block leading-none mb-1 uppercase">${item.cliente}</b>
+                                        <span class="text-[9px] font-bold ${diff > 0 ? 'text-red-500' : 'text-slate-400'} uppercase">
+                                            ${diff > 0 ? '⚠ Score em Queda (' + diff + 'd atraso)' : '✓ Score Estável'}
+                                        </span>
+                                    </div>
                                 </div>
                             </td>
-                            <td class="p-4 text-right">
-                                <p class="font-black text-slate-900 text-base">R$ ${valorFinal.toFixed(2)}</p>
-                                ${multa > 0 ? `<p class="text-[9px] text-red-500 font-bold">+ Multa/Juros Aplicados</p>` : ''}
+                            <td class="p-5 text-center">
+                                <p class="font-mono-euro text-xs font-bold text-slate-600">${venci.toLocaleDateString('pt-BR')}</p>
                             </td>
-                            <td class="p-4 text-center">
+                            <td class="p-5 text-right">
+                                <p class="font-black text-slate-900">R$ ${valorFinal.toFixed(2)}</p>
+                                ${multa > 0 ? `<p class="text-[8px] text-red-500 font-bold italic">+ juros aplicados</p>` : ''}
+                            </td>
+                            <td class="p-5">
                                 <div class="flex gap-2 justify-center">
-                                    <button onclick="darBaixa(${item.id})" class="bg-emerald-500 text-white px-3 py-1 rounded text-[10px] font-black uppercase shadow-sm">Confirmar</button>
-                                    <button onclick="cobrar('${item.cliente}','${valorFinal.toFixed(2)}')" class="border border-blue-500 text-blue-600 px-3 py-1 rounded text-[10px] font-black uppercase">Cobrar</button>
+                                    <button onclick="darBaixa(${item.id})" class="bg-slate-900 text-white px-3 py-1.5 rounded-lg text-[9px] font-black uppercase hover:bg-blue-600 transition">Baixa</button>
+                                    <button onclick="cobrar('${item.cliente}','${valorFinal.toFixed(2)}')" class="border-2 border-slate-200 text-slate-500 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase hover:border-blue-500 hover:text-blue-500 transition">Zap</button>
                                 </div>
                             </td>
                         </tr>`;
                 }
             });
 
-            // ATUALIZAÇÃO DOS CARDS BI
-            document.getElementById('total-geral').innerText = `R$ ${bi.total.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
-            document.getElementById('total-recebido').innerText = `R$ ${bi.recebido.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
-            document.getElementById('total-atrasado').innerText = `R$ ${bi.atrasado.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
-            document.getElementById('ticket-medio').innerText = `R$ ${(bi.count > 0 ? bi.total/bi.count : 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+            // ATUALIZAR INTERFACE
+            const fmt = (v) => v.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
+            document.getElementById('bi-total').innerText = fmt(stats.total);
+            document.getElementById('bi-pago').innerText = fmt(stats.pago);
+            document.getElementById('bi-atraso').innerText = fmt(stats.atraso);
+            document.getElementById('bi-proj').innerText = fmt(stats.proj15);
+
+            // Progress Bar
+            const metaPerc = (stats.pago / (stats.total + stats.pago) * 100) || 0;
+            document.getElementById('meta-progress').style.width = metaPerc + '%';
             
-            document.getElementById('prev-7').innerText = `R$ ${bi.p7.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
-            document.getElementById('prev-15').innerText = `R$ ${bi.p15.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
-            document.getElementById('prev-30').innerText = `R$ ${bi.p30.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+            // Calendário Lateral
+            document.getElementById('calendar-view').innerHTML = `
+                ${renderSemana("1ª Semana", s1)}
+                ${renderSemana("2ª Semana", s2)}
+                ${renderSemana("3ª Semana", s3)}
+                ${renderSemana("4ª Semana", s4)}
+            `;
 
-            // Cálculos de Percentual
-            const taxaInd = (bi.total > 0) ? (bi.atrasado / bi.total * 100).toFixed(1) : 0;
-            document.getElementById('taxa-inadimplencia').innerText = `Taxa: ${taxaInd}% da carteira`;
-
-            renderChart({ recebido: bi.recebido, pendente: bi.total });
+            renderChart(stats.pago, stats.total);
         }
 
-        function cobrar(cliente, valor) {
-            const msg = `Olá, aqui é o *${MEU_NOME}* (Euro Diesel). Constatamos um título em aberto de *R$ ${valor}*. Poderia verificar se já foi realizado o pagamento?`;
-            window.open(`https://wa.me/${MEU_WHATSAPP}?text=${encodeURIComponent(msg)}`, '_blank');
+        function renderSemana(nome, valor) {
+            return `
+                <div class="flex justify-between items-center bg-slate-800/50 p-3 rounded-lg border border-slate-700">
+                    <span class="text-[10px] font-bold text-slate-400">${nome}</span>
+                    <span class="font-mono-euro text-xs font-black">R$ ${valor.toFixed(2)}</span>
+                </div>
+            `;
+        }
+
+        function cobrar(cli, val) {
+            const msg = `Bom dia, aqui é o *${CONFIG.nome}*, Diretor Financeiro da *EURO DIESEL*. Notamos uma pendência de *R$ ${val}* em nosso sistema. Podemos ajudar com a segunda via?`;
+            window.open(`https://wa.me/${CONFIG.whatsapp}?text=${encodeURIComponent(msg)}`, '_blank');
         }
 
         async function darBaixa(id) {
-            if(confirm("Confirmar entrada de valores?")) {
+            if(confirm("Confirmar entrada de recurso em conta?")) {
                 await _supabase.from('controle_financeiro').update({ status: 'pago' }).eq('id', id);
-                processarFinanceiro();
+                carregarPainel();
             }
         }
 
-        let chartInstance;
-        function renderChart(info) {
-            const ctx = document.getElementById('chartBI').getContext('2d');
-            if(chartInstance) chartInstance.destroy();
-            chartInstance = new Chart(ctx, {
+        let chart;
+        function renderChart(pago, pendente) {
+            const ctx = document.getElementById('chartDoughnut');
+            if(chart) chart.destroy();
+            chart = new Chart(ctx, {
                 type: 'doughnut',
                 data: {
-                    labels: ['Recebido', 'Pendente'],
+                    labels: ['Efetuado', 'Aguardando'],
                     datasets: [{
-                        data: [info.recebido, info.pendente],
-                        backgroundColor: ['#10b981', '#3b82f6'],
-                        borderWidth: 0
+                        data: [pago, pendente],
+                        backgroundColor: ['#3b82f6', '#e2e8f0'],
+                        borderWidth: 0,
+                        hoverOffset: 10
                     }]
                 },
-                options: { plugins: { legend: { position: 'bottom', labels: { font: { size: 10, weight: 'bold' } } } } }
+                options: { cutout: '80%', plugins: { legend: { display: false } } }
             });
         }
 
-        processarFinanceiro();
+        carregarPainel();
     </script>
 </body>
 </html>
