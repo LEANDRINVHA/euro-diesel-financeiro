@@ -56,15 +56,15 @@
             <div class="lg:col-span-2 card-lux overflow-hidden">
                 <div class="p-6 border-b bg-slate-50/50 flex justify-between items-center">
                     <h3 class="font-black text-slate-700 text-xs uppercase italic">Auditoria Contábil Ativa</h3>
-                    <button onclick="processarFinanceiro()" class="text-blue-600 font-bold text-xs">🔄 Atualizar</button>
+                    <button onclick="processarFinanceiro()" class="text-blue-600 font-bold text-xs uppercase tracking-widest hover:underline">🔄 Atualizar Sistema</button>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left">
                         <thead class="bg-slate-100 text-[10px] font-black text-slate-500 uppercase">
                             <tr>
                                 <th class="p-4">Cliente / Info</th>
-                                <th class="p-4 text-right">Líquido</th>
-                                <th class="p-4 text-center">Ações</th>
+                                <th class="p-4 text-right">Líquido Atualizado</th>
+                                <th class="p-4 text-center">Ações de Cobrança</th>
                             </tr>
                         </thead>
                         <tbody id="tabela-corpo" class="divide-y divide-slate-100 text-sm"></tbody>
@@ -72,7 +72,7 @@
                 </div>
             </div>
 
-            <div class="card-lux p-6">
+            <div class="card-lux p-6 h-fit">
                 <h3 class="font-black text-slate-700 text-xs uppercase mb-6 text-center">Fluxo de Caixa Mensal</h3>
                 <canvas id="chartBI"></canvas>
             </div>
@@ -85,98 +85,81 @@
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         let chartInstance;
 
+        const MEU_WHATSAPP = "5569981128233";
+        const MEU_NOME = "Leandro";
+        const MEU_CARGO = "Gerente Financeiro Master";
+
         async function darBaixa(id) {
-            if(!confirm("Confirmar entrada de valor no caixa?")) return;
+            if(!confirm("Confirmar entrada de valor no caixa da Euro Diesel?")) return;
             await _supabase.from('controle_financeiro').update({ status: 'pago' }).eq('id', id);
             processarFinanceiro();
         }
 
-        // CONFIGURAÇÃO DE CONTATO DA EURO DIESEL
-const MEU_WHATSAPP = "5569981128233";
-const MEU_NOME = "Leandro";
-const MEU_CARGO = "Gerente Financeiro Master";
+        function cobrarWhatsApp(cliente, valor, vencimento) {
+            const saudacao = new Date().getHours() < 12 ? "Bom dia" : "Boa tarde";
+            const mensagem = `${saudacao}, \n\nAqui é o *${MEU_NOME}*, ${MEU_CARGO} da *EURO DIESEL MECATRÔNICA*.\n\nConstatamos em nosso sistema de auditoria que o título no valor de *R$ ${valor}*, com vencimento em *${vencimento}*, ainda não consta como liquidado em nossa conta corrente.\n\nCaso o pagamento já tenha sido efetuado via PIX ou Boleto, pedimos a gentileza de nos encaminhar o comprovante por aqui para realizarmos a baixa imediata em seu cadastro.\n\nFicamos à disposição para qualquer dúvida.\nAtenciosamente,\n*Departamento Financeiro | EURO DIESEL*`;
+            window.open(`https://wa.me/${MEU_WHATSAPP}?text=${encodeURIComponent(mensagem)}`, '_blank');
+        }
 
-function cobrarWhatsApp(cliente, valor, vencimento) {
-    // Mensagem estruturada para passar credibilidade de alto nível
-    const saudacao = new Date().getHours() < 12 ? "Bom dia" : "Boa tarde";
-    
-    const mensagem = 
-`${saudacao}, 
+        async function processarFinanceiro() {
+            const { data, error } = await _supabase.from('controle_financeiro').select('*').order('vencimento', { ascending: true });
+            if (error) return;
 
-Aqui é o *${MEU_NOME}*, ${MEU_CARGO} da *EURO DIESEL MECATRÔNICA*.
+            const corpo = document.getElementById('tabela-corpo');
+            corpo.innerHTML = '';
+            
+            let stats = { total: 0, atrasado: 0, recebido: 0, semana: 0 };
+            let chartData = {};
+            const hoje = new Date(); hoje.setHours(0,0,0,0);
 
-Constatamos em nosso sistema de auditoria que o título no valor de *R$ ${valor}*, com vencimento em *${vencimento}*, ainda não consta como liquidado em nossa conta corrente.
+            data.forEach(item => {
+                const venci = new Date(item.vencimento + 'T12:00:00');
+                const diff = Math.floor((hoje - venci) / (1000*60*60*24));
+                
+                // Cálculo de juros apenas se não estiver pago
+                const multa = (diff > 0 && item.status !== 'pago') ? (item.valor_nominal * 0.05) + (item.valor_nominal * 0.0017 * diff) : 0;
+                const totalComEncargos = item.valor_nominal + multa;
 
-Caso o pagamento já tenha sido efetuado via PIX ou Boleto, pedimos a gentileza de nos encaminhar o comprovante por aqui para realizarmos a baixa imediata em seu cadastro.
+                if(item.status === 'pago') {
+                    if(venci.getMonth() === hoje.getMonth()) stats.recebido += item.valor_nominal;
+                } else {
+                    stats.total += totalComEncargos;
+                    if(diff > 0) stats.atrasado += totalComEncargos;
+                    if(diff <= 0 && diff >= -7) stats.semana += totalComEncargos;
 
-Ficamos à disposição para qualquer dúvida.
-Atenciosamente,
-*Departamento Financeiro | EURO DIESEL*`;
+                    corpo.innerHTML += `
+                        <tr class="hover:bg-blue-50 transition border-b border-slate-100">
+                            <td class="p-4">
+                                <span class="text-[9px] font-black ${diff > 0 ? 'text-red-500' : 'text-green-500'} uppercase">
+                                    ● ${diff > 0 ? 'Atrasado ' + diff + ' dias' : 'Em Dia'}
+                                </span><br>
+                                <b class="text-slate-800 uppercase text-xs">${item.cliente}</b><br>
+                                <span class="text-[10px] text-slate-400 font-bold">VENCIMENTO: ${venci.toLocaleDateString('pt-BR')}</span>
+                            </td>
+                            <td class="p-4 text-right">
+                                <div class="text-[10px] text-slate-400 italic leading-none">Líquido</div>
+                                <div class="font-black text-blue-900 text-base">R$ ${totalComEncargos.toFixed(2)}</div>
+                            </td>
+                            <td class="p-4">
+                                <div class="flex flex-col gap-2">
+                                    <button onclick="darBaixa(${item.id})" class="bg-green-600 hover:bg-green-700 text-white py-2 px-3 rounded-lg text-[10px] font-black uppercase shadow-sm">Confirmar Recebimento</button>
+                                    <button onclick="cobrarWhatsApp('${item.cliente}', '${totalComEncargos.toFixed(2)}', '${venci.toLocaleDateString('pt-BR')}')" class="border border-emerald-500 text-emerald-600 hover:bg-emerald-50 py-2 px-3 rounded-lg text-[10px] font-black uppercase transition text-center font-bold">Cobrança WhatsApp</button>
+                                </div>
+                            </td>
+                        </tr>`;
+                }
 
-    const url = `https://wa.me/${MEU_WHATSAPP}?text=${encodeURIComponent(mensagem)}`;
-    window.open(url, '_blank');
-}
-
-// Atualização da Tabela para incluir os botões com a nova lógica
-async function processarFinanceiro() {
-    const { data, error } = await _supabase.from('controle_financeiro').select('*').order('vencimento', { ascending: true });
-    if (error) return;
-
-    const corpo = document.getElementById('tabela-corpo');
-    corpo.innerHTML = '';
-    const hoje = new Date(); hoje.setHours(0,0,0,0);
-
-    data.forEach(item => {
-        if(item.status === 'pago') return;
-
-        const venci = new Date(item.vencimento + 'T12:00:00');
-        const diff = Math.floor((hoje - venci) / (1000*60*60*24));
-        const multa = diff > 0 ? item.valor_nominal * 0.05 + (item.valor_nominal * 0.0017 * diff) : 0;
-        const total = item.valor_nominal + multa;
-
-        corpo.innerHTML += `
-            <tr class="hover:bg-blue-50 transition border-b border-slate-100">
-                <td class="p-4">
-                    <span class="text-[9px] font-black ${diff > 0 ? 'text-red-500' : 'text-green-500'}">
-                        ● ${diff > 0 ? 'PENDÊNCIA DE '+diff+' DIAS' : 'DENTRO DO PRAZO'}
-                    </span><br>
-                    <b class="text-slate-800 uppercase text-xs">${item.cliente}</b><br>
-                    <span class="text-[10px] text-slate-400 font-bold">VENCIMENTO: ${venci.toLocaleDateString('pt-BR')}</span>
-                </td>
-                <td class="p-4 text-right">
-                    <div class="text-[10px] text-slate-400 italic leading-none">Total com encargos</div>
-                    <div class="font-black text-blue-900 text-base">R$ ${total.toFixed(2)}</div>
-                </td>
-                <td class="p-4">
-                    <div class="flex flex-col gap-2">
-                        <button onclick="darBaixa(${item.id})" 
-                            class="bg-green-600 hover:bg-green-700 text-white py-2 px-3 rounded-lg text-[10px] font-black uppercase shadow-sm">
-                            Confirmar PIX / Pago
-                        </button>
-                        <button onclick="cobrarWhatsApp('${item.cliente}', '${total.toFixed(2)}', '${venci.toLocaleDateString('pt-BR')}')" 
-                            class="border border-emerald-500 text-emerald-600 hover:bg-emerald-50 py-2 px-3 rounded-lg text-[10px] font-black uppercase transition text-center">
-                            Cobrança Direta (WhatsApp)
-                        </button>
-                    </div>
-                </td>
-            </tr>`;
-    });
-    
-    // Chamada para atualizar os cards de resumo e gráficos (que já temos no código anterior)
-    atualizarCardsEResumos(data); 
-}
-
-                // Dados Gráfico
+                // Agrupamento para Gráfico
                 const mes = venci.toLocaleString('pt-BR', { month: 'short' }).toUpperCase();
                 chartData[mes] = (chartData[mes] || 0) + item.valor_nominal;
             });
 
-            // Atualiza UI
+            // Atualiza Interface
             document.getElementById('total-geral').innerText = `R$ ${stats.total.toFixed(2)}`;
             document.getElementById('total-atrasado').innerText = `R$ ${stats.atrasado.toFixed(2)}`;
             document.getElementById('total-recebido').innerText = `R$ ${stats.recebido.toFixed(2)}`;
             document.getElementById('total-semana').innerText = `R$ ${stats.semana.toFixed(2)}`;
-
+            
             renderChart(chartData);
         }
 
@@ -187,13 +170,12 @@ async function processarFinanceiro() {
                 type: 'line',
                 data: {
                     labels: Object.keys(dados),
-                    datasets: [{ label: 'Receita', data: Object.values(dados), borderColor: '#3b82f6', tension: 0.4, fill: true, backgroundColor: 'rgba(59, 130, 246, 0.1)' }]
+                    datasets: [{ label: 'Previsão Mensal', data: Object.values(dados), borderColor: '#3b82f6', tension: 0.4, fill: true, backgroundColor: 'rgba(59, 130, 246, 0.05)' }]
                 },
-                options: { plugins: { legend: { display: false } } }
+                options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
             });
         }
 
-        // Mantenha aqui a sua lógica de PDF/OCR anterior
         processarFinanceiro();
     </script>
 </body>
