@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>EURO DIESEL | EXECUTIVE BI</title>
+    <title>EURO DIESEL | EXECUTIVE BI V9</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
@@ -12,17 +12,16 @@
         :root { --euro-blue: #0062ff; --euro-dark: #07090e; --euro-card: #0d1117; --euro-border: #1f2937; }
         body { font-family: 'Inter', sans-serif; background: var(--euro-dark); color: #f1f5f9; margin: 0; padding: 20px; }
         .master-panel { background: var(--euro-card); border: 1px solid var(--euro-border); border-radius: 16px; }
-        .neon-border { border-left: 4px solid var(--euro-blue); box-shadow: -5px 0 15px rgba(0, 98, 255, 0.2); }
+        .neon-border { border-left: 4px solid var(--euro-blue); box-shadow: -5px 0 15px rgba(0, 98, 255, 0.1); }
+        .neon-border-pago { border-left: 4px solid #10b981; box-shadow: -5px 0 15px rgba(16, 185, 129, 0.1); }
         .btn-master { background: #1f2937; border: 1px solid #374151; transition: 0.3s; cursor: pointer; letter-spacing: 2px; }
         .btn-master:hover { border-color: var(--euro-blue); box-shadow: 0 0 20px rgba(0, 98, 255, 0.3); color: var(--euro-blue); }
         .neon-text { text-shadow: 0 0 12px rgba(0, 98, 255, 0.6); }
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-thumb { background: var(--euro-blue); border-radius: 10px; }
     </style>
 </head>
 <body class="p-6 md:p-12">
 
-    <header class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-12 gap-8">
+    <header class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-10 gap-8">
         <div>
             <h1 class="text-5xl font-black tracking-tighter neon-text uppercase italic">EURO DIESEL</h1>
             <div class="flex items-center gap-3 mt-1">
@@ -47,12 +46,22 @@
         </div>
     </header>
 
+    <p class="text-[10px] font-black text-blue-500 uppercase mb-4 tracking-[0.3em]">Previsão de Recebimento (Pendente)</p>
+    <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
+        <div class="master-panel neon-border p-5"><p class="text-[9px] font-black text-slate-500 uppercase mb-2">Hoje</p><h2 id="rec-hoje" class="text-xl font-black text-white italic font-mono">R$ 0,00</h2></div>
+        <div class="master-panel neon-border p-5"><p class="text-[9px] font-black text-slate-500 uppercase mb-2">Semana</p><h2 id="rec-semana" class="text-xl font-black text-white italic font-mono">R$ 0,00</h2></div>
+        <div class="master-panel neon-border p-5"><p class="text-[9px] font-black text-slate-500 uppercase mb-2">Mês</p><h2 id="rec-mes" class="text-xl font-black text-white italic font-mono">R$ 0,00</h2></div>
+        <div class="master-panel neon-border p-5"><p class="text-[9px] font-black text-slate-500 uppercase mb-2">Ano</p><h2 id="rec-ano" class="text-xl font-black text-white italic font-mono">R$ 0,00</h2></div>
+        <div class="master-panel neon-border p-5"><p class="text-[9px] font-black text-slate-500 uppercase mb-2">Próximos 12 Meses</p><h2 id="rec-total" class="text-xl font-black text-blue-400 italic font-mono">R$ 0,00</h2></div>
+    </div>
+
+    <p class="text-[10px] font-black text-emerald-500 uppercase mb-4 tracking-[0.3em]">Valores Recebidos (Baixados)</p>
     <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-12">
-        <div class="master-panel neon-border p-5 border-blue-500"><p class="text-[9px] font-black text-slate-500 uppercase mb-2 tracking-widest">Hoje</p><h2 id="rec-hoje" class="text-xl font-black text-white italic font-mono">R$ 0,00</h2></div>
-        <div class="master-panel neon-border p-5 border-indigo-500"><p class="text-[9px] font-black text-slate-500 uppercase mb-2 tracking-widest">Semana</p><h2 id="rec-semana" class="text-xl font-black text-white italic font-mono">R$ 0,00</h2></div>
-        <div class="master-panel neon-border p-5 border-emerald-500"><p class="text-[9px] font-black text-slate-500 uppercase mb-2 tracking-widest">Mês</p><h2 id="rec-mes" class="text-xl font-black text-emerald-400 italic font-mono">R$ 0,00</h2></div>
-        <div class="master-panel neon-border p-5 border-amber-500"><p class="text-[9px] font-black text-slate-500 uppercase mb-2 tracking-widest">Ano</p><h2 id="rec-ano" class="text-xl font-black text-amber-500 italic font-mono">R$ 0,00</h2></div>
-        <div class="master-panel neon-border p-5 border-purple-500"><p class="text-[9px] font-black text-slate-500 uppercase mb-2 tracking-widest">Próximos 12 Meses</p><h2 id="rec-total" class="text-xl font-black text-purple-400 italic font-mono">R$ 0,00</h2></div>
+        <div class="master-panel neon-border-pago p-5"><p class="text-[9px] font-black text-slate-500 uppercase mb-2">Recebi Hoje</p><h2 id="pago-hoje" class="text-xl font-black text-white italic font-mono">R$ 0,00</h2></div>
+        <div class="master-panel neon-border-pago p-5"><p class="text-[9px] font-black text-slate-500 uppercase mb-2">Recebi Semana</p><h2 id="pago-semana" class="text-xl font-black text-white italic font-mono">R$ 0,00</h2></div>
+        <div class="master-panel neon-border-pago p-5"><p class="text-[9px] font-black text-slate-500 uppercase mb-2">Recebi Mês</p><h2 id="pago-mes" class="text-xl font-black text-white italic font-mono">R$ 0,00</h2></div>
+        <div class="master-panel neon-border-pago p-5"><p class="text-[9px] font-black text-slate-500 uppercase mb-2">Recebi Ano</p><h2 id="pago-ano" class="text-xl font-black text-white italic font-mono">R$ 0,00</h2></div>
+        <div class="master-panel neon-border-pago p-5"><p class="text-[9px] font-black text-slate-500 uppercase mb-2">Próximos 12 Meses</p><h2 id="pago-total" class="text-xl font-black text-emerald-400 italic font-mono">R$ 0,00</h2></div>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-12">
@@ -69,12 +78,9 @@
                 </div>
             </div>
         </div>
-        
-        <div class="space-y-6">
-            <div class="master-panel p-8">
-                <h3 class="text-[10px] font-black text-blue-500 uppercase mb-8 tracking-[0.4em] text-center">Top 5 Pagadores (Valor)</h3>
-                <canvas id="chartFast" height="300"></canvas>
-            </div>
+        <div class="master-panel p-8">
+            <h3 class="text-[10px] font-black text-blue-500 uppercase mb-8 tracking-[0.4em] text-center">Top 5 Pagadores (Valor)</h3>
+            <canvas id="chartFast" height="300"></canvas>
         </div>
     </div>
 
@@ -87,7 +93,6 @@
         };
         const _db = supabase.createClient(CONFIG.url, CONFIG.key);
 
-        // MENSAGEM PROFISSIONAL DE COBRANÇA WHATSAPP
         function cobrarCliente(cliente, valor, vencimento) {
             const msg = `Olá, tudo bem? Aqui é o Leandro, Gerente Financeiro da EURO DIESEL. Gostaria de informar que consta em nosso sistema um título em aberto para ${cliente} no valor de R$ ${valor}, com vencimento em ${vencimento}. Poderia confirmar o recebimento do boleto ou o status do pagamento? Ficamos à disposição. Atenciosamente, Leandro (Financeiro Euro Diesel).`;
             const url = `https://wa.me/?text=${encodeURIComponent(msg)}`;
@@ -97,7 +102,6 @@
         async function processarPDFDinamico(input) {
             const file = input.files[0];
             if (!file) return;
-
             const reader = new FileReader();
             reader.onload = async function() {
                 const typedarray = new Uint8Array(this.result);
@@ -106,7 +110,6 @@
                 const textContent = await page.getTextContent();
                 const lines = textContent.items.map(s => s.str);
                 const fullText = lines.join(' ');
-
                 let cliente = "CLIENTE NOVO";
                 for (let i = 0; i < lines.length; i++) {
                     if (lines[i].includes("Nome do Pagador") || lines[i].includes("CPF/CNPJ")) {
@@ -115,7 +118,6 @@
                         break;
                     }
                 }
-
                 const valorMatch = fullText.match(/(\d{1,3}(\.\d{3})*,\d{2})/);
                 const valor = valorMatch ? parseFloat(valorMatch[0].replace('.','').replace(',','.')) : 0;
                 const dataMatch = fullText.match(/(\d{2}\/\d{2}\/\d{4})/);
@@ -124,14 +126,9 @@
                     const [d, m, y] = dataMatch[0].split('/');
                     vencimento = `${y}-${m}-${d}`;
                 }
-
                 const { error } = await _db.from('controle_financeiro').insert([{
-                    cliente: cliente,
-                    valor_nominal: valor,
-                    vencimento: vencimento,
-                    status: "pendente"
+                    cliente: cliente, valor_nominal: valor, vencimento: vencimento, status: "pendente"
                 }]);
-
                 if (!error) carregarContabilidade();
             };
             reader.readAsArrayBuffer(file);
@@ -142,47 +139,65 @@
             if (error) return;
 
             const hoje = new Date(); hoje.setHours(0,0,0,0);
-            let totals = { hoje: 0, semana: 0, mes: 0, ano: 0, total: 0 };
+            const umaSemana = new Date(hoje.getTime() + 7 * 24 * 60 * 60 * 1000);
+            
+            let aReceber = { hoje: 0, semana: 0, mes: 0, ano: 0, total: 0 };
+            let recebidos = { hoje: 0, semana: 0, mes: 0, ano: 0, total: 0 };
             let rankingValor = {};
 
             const corpo = document.getElementById('audit-body');
             corpo.innerHTML = '';
 
-            data.sort((a,b) => new Date(a.vencimento) - new Date(b.vencimento)).forEach(item => {
+            data.forEach(item => {
                 const venci = new Date(item.vencimento + 'T12:00:00');
+                const pagoEm = item.data_pagamento ? new Date(item.data_pagamento) : null;
                 const valor = item.valor_nominal;
 
                 if (item.status === 'pago') {
                     rankingValor[item.cliente] = (rankingValor[item.cliente] || 0) + valor;
+                    
+                    recebidos.total += valor;
+                    if (pagoEm && pagoEm.toDateString() === hoje.toDateString()) recebidos.hoje += valor;
+                    if (pagoEm && pagoEm >= new Date(hoje.getTime() - 7 * 24 * 60 * 60 * 1000)) recebidos.semana += valor;
+                    if (pagoEm && pagoEm.getMonth() === hoje.getMonth() && pagoEm.getFullYear() === hoje.getFullYear()) recebidos.mes += valor;
+                    if (pagoEm && pagoEm.getFullYear() === hoje.getFullYear()) recebidos.ano += valor;
                 } else {
-                    totals.total += valor;
-                    if (venci.toDateString() === hoje.toDateString()) totals.hoje += valor;
-                    if (venci >= hoje && venci <= new Date(hoje.getTime() + 7 * 24 * 60 * 60 * 1000)) totals.semana += valor;
-                    if (venci.getMonth() === hoje.getMonth() && venci.getFullYear() === hoje.getFullYear()) totals.mes += valor;
-                    if (venci.getFullYear() === hoje.getFullYear()) totals.ano += valor;
+                    aReceber.total += valor;
+                    if (venci.toDateString() === hoje.toDateString()) aReceber.hoje += valor;
+                    if (venci >= hoje && venci <= umaSemana) aReceber.semana += valor;
+                    if (venci.getMonth() === hoje.getMonth() && venci.getFullYear() === hoje.getFullYear()) aReceber.mes += valor;
+                    if (venci.getFullYear() === hoje.getFullYear()) aReceber.ano += valor;
 
                     corpo.innerHTML += `
                         <tr class="hover:bg-blue-600/5 transition group">
                             <td class="p-6">
                                 <span class="text-xs font-black text-white uppercase tracking-wider">${item.cliente}</span><br>
-                                <span class="text-[9px] text-slate-500 font-bold tracking-widest uppercase">VENCIMENTO: ${venci.toLocaleDateString()}</span>
+                                <span class="text-[9px] text-slate-500 font-bold tracking-widest uppercase italic">VENCIMENTO: ${venci.toLocaleDateString()}</span>
                             </td>
                             <td class="p-6 text-right font-mono font-bold text-white text-sm">R$ ${valor.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
                             <td class="p-6 text-right flex gap-3 justify-end opacity-40 group-hover:opacity-100 transition">
-                                <button onclick="baixar(${item.id})" class="text-[9px] font-black uppercase py-2 px-5 rounded-lg border border-emerald-500/50 text-emerald-500 hover:bg-emerald-500 hover:text-white transition">Baixa</button>
+                                <button onclick="baixar(${item.id})" class="text-[9px] font-black uppercase py-2 px-5 rounded-lg border border-emerald-500/50 text-emerald-500 hover:bg-emerald-600 hover:text-white transition">Baixa</button>
                                 <button onclick="cobrarCliente('${item.cliente}', '${valor.toLocaleString('pt-BR', {minimumFractionDigits: 2})}', '${venci.toLocaleDateString()}')" class="text-[9px] font-black uppercase py-2 px-5 rounded-lg border border-blue-500/50 text-blue-500 hover:bg-blue-500 hover:text-white transition">Cobrar</button>
                             </td>
                         </tr>`;
                 }
             });
 
-            document.getElementById('rec-hoje').innerText = "R$ " + totals.hoje.toLocaleString('pt-BR', {minimumFractionDigits: 2});
-            document.getElementById('rec-semana').innerText = "R$ " + totals.semana.toLocaleString('pt-BR', {minimumFractionDigits: 2});
-            document.getElementById('rec-mes').innerText = "R$ " + totals.mes.toLocaleString('pt-BR', {minimumFractionDigits: 2});
-            document.getElementById('rec-ano').innerText = "R$ " + totals.ano.toLocaleString('pt-BR', {minimumFractionDigits: 2});
-            document.getElementById('rec-total').innerText = "R$ " + totals.total.toLocaleString('pt-BR', {minimumFractionDigits: 2});
-            document.getElementById('total-titulos').innerText = data.filter(x => x.status === 'pendente').length + " TÍTULOS";
+            // Atualiza Interface A Receber
+            document.getElementById('rec-hoje').innerText = "R$ " + aReceber.hoje.toLocaleString('pt-BR', {minimumFractionDigits: 2});
+            document.getElementById('rec-semana').innerText = "R$ " + aReceber.semana.toLocaleString('pt-BR', {minimumFractionDigits: 2});
+            document.getElementById('rec-mes').innerText = "R$ " + aReceber.mes.toLocaleString('pt-BR', {minimumFractionDigits: 2});
+            document.getElementById('rec-ano').innerText = "R$ " + aReceber.ano.toLocaleString('pt-BR', {minimumFractionDigits: 2});
+            document.getElementById('rec-total').innerText = "R$ " + aReceber.total.toLocaleString('pt-BR', {minimumFractionDigits: 2});
 
+            // Atualiza Interface Já Recebidos
+            document.getElementById('pago-hoje').innerText = "R$ " + recebidos.hoje.toLocaleString('pt-BR', {minimumFractionDigits: 2});
+            document.getElementById('pago-semana').innerText = "R$ " + recebidos.semana.toLocaleString('pt-BR', {minimumFractionDigits: 2});
+            document.getElementById('pago-mes').innerText = "R$ " + recebidos.mes.toLocaleString('pt-BR', {minimumFractionDigits: 2});
+            document.getElementById('pago-ano').innerText = "R$ " + recebidos.ano.toLocaleString('pt-BR', {minimumFractionDigits: 2});
+            document.getElementById('pago-total').innerText = "R$ " + recebidos.total.toLocaleString('pt-BR', {minimumFractionDigits: 2});
+
+            document.getElementById('total-titulos').innerText = data.filter(x => x.status === 'pendente').length + " TÍTULOS ATIVOS";
             renderChart('chartFast', rankingValor);
         }
 
@@ -203,13 +218,12 @@
         }
 
         async function gerarRelatorioBI() {
+            // Mantém a estrutura de relatório luxuosa anterior
             const { data } = await _db.from('controle_financeiro').select('*');
             const win = window.open("", "_blank");
-            
             const stats = (days) => {
                 const limit = new Date(); limit.setDate(limit.getDate() - days);
-                let ranking = {};
-                let totalGeral = 0;
+                let ranking = {}; let totalGeral = 0;
                 data.filter(x => x.status === 'pago' && new Date(x.data_pagamento) >= limit)
                     .forEach(i => {
                         if(!ranking[i.cliente]) ranking[i.cliente] = { valor: 0, qtd: 0 };
@@ -217,53 +231,31 @@
                         ranking[i.cliente].qtd += 1;
                         totalGeral += i.valor_nominal;
                     });
-                return { 
-                    ranking: Object.entries(ranking).sort((a, b) => b[1].valor - a[1].valor),
-                    total: totalGeral,
-                    media: totalGeral / (Object.keys(ranking).length || 1)
-                };
+                return { ranking: Object.entries(ranking).sort((a, b) => b[1].valor - a[1].valor), total: totalGeral, media: totalGeral / (Object.keys(ranking).length || 1) };
             };
-
-            const s30 = stats(30);
-            const s180 = stats(180);
-            const s365 = stats(365);
+            const s30 = stats(30); const s180 = stats(180); const s365 = stats(365);
 
             win.document.write(`
                 <html><head><title>BI LUXO | EURO DIESEL</title>
-                <script src="https://cdn.jsdelivr.net/npm/chart.js"><\/script>
-                <script src="https://cdn.tailwindcss.com"><\/script>
-                <style>
-                    body { background: #07090e; color: white; font-family: 'Inter', sans-serif; }
-                    .card-bi { background: #0d1117; border: 1px solid #1f2937; border-radius: 20px; }
-                    .glow { text-shadow: 0 0 15px rgba(0, 98, 255, 0.5); }
-                </style></head><body class="p-12">
-                <header class="mb-12 flex justify-between items-end border-b border-gray-800 pb-8">
-                    <div>
-                        <h1 class="text-4xl font-black italic glow tracking-tighter uppercase">Relatório de Alta Performance</h1>
-                        <p class="text-slate-500 text-xs tracking-[5px] font-bold mt-2">EURO DIESEL FINANCE | LEANDRIN® MASTER</p>
-                    </div>
-                </header>
-
+                <script src="https://cdn.jsdelivr.net/npm/chart.js"><\/script><script src="https://cdn.tailwindcss.com"><\/script>
+                <style>body { background: #07090e; color: white; font-family: 'Inter', sans-serif; }</style></head><body class="p-12">
+                <h1 class="text-4xl font-black italic uppercase mb-12 border-b border-gray-800 pb-4">Relatório Executivo Leandrin®</h1>
                 <div class="grid grid-cols-3 gap-8 mb-12">
-                    <div class="card-bi p-8 text-center border-l-4 border-blue-500"><p class="text-[10px] text-slate-500 font-black uppercase mb-2">Faturamento 30 Dias</p><h2 class="text-3xl font-black">R$ ${s30.total.toLocaleString('pt-BR')}</h2></div>
-                    <div class="card-bi p-8 text-center border-l-4 border-indigo-500"><p class="text-[10px] text-slate-500 font-black uppercase mb-2">Ticket Médio</p><h2 class="text-3xl font-black">R$ ${s30.media.toLocaleString('pt-BR', {maximumFractionDigits:0})}</h2></div>
-                    <div class="card-bi p-8 text-center border-l-4 border-emerald-500"><p class="text-[10px] text-slate-500 font-black uppercase mb-2">Volume Anual</p><h2 class="text-3xl font-black">R$ ${s365.total.toLocaleString('pt-BR')}</h2></div>
+                    <div class="bg-[#0d1117] p-8 rounded-2xl border-l-4 border-blue-500"><h3>Faturamento 30 Dias</h3><h2 class="text-3xl font-black">R$ ${s30.total.toLocaleString('pt-BR')}</h2></div>
+                    <div class="bg-[#0d1117] p-8 rounded-2xl border-l-4 border-indigo-500"><h3>Ticket Médio</h3><h2 class="text-3xl font-black">R$ ${s30.media.toLocaleString('pt-BR', {maximumFractionDigits:0})}</h2></div>
+                    <div class="bg-[#0d1117] p-8 rounded-2xl border-l-4 border-emerald-500"><h3>Total Anual</h3><h2 class="text-3xl font-black">R$ ${s365.total.toLocaleString('pt-BR')}</h2></div>
                 </div>
-
                 <div class="grid grid-cols-3 gap-8">
-                    <div class="card-bi p-8"><h3>Ranking 30 Dias (Valor/Qtd)</h3><canvas id="c1"></canvas></div>
-                    <div class="card-bi p-8"><h3>6 Meses: Market Share</h3><canvas id="c2"></canvas></div>
-                    <div class="card-bi p-8"><h3>12 Meses: Projeção</h3><canvas id="c3"></canvas></div>
+                    <div class="bg-[#0d1117] p-8 rounded-2xl"><h3>Ranking Mês</h3><canvas id="c1"></canvas></div>
+                    <div class="bg-[#0d1117] p-8 rounded-2xl"><h3>Market Share</h3><canvas id="c2"></canvas></div>
+                    <div class="bg-[#0d1117] p-8 rounded-2xl"><h3>Ranking Ano</h3><canvas id="c3"></canvas></div>
                 </div>
-
                 <script>
                     const cfg = (id, data, type) => new Chart(document.getElementById(id), {
                         type: type, data: { labels: data.map(x => x[0] + " (" + x[1].qtd + ")"), datasets: [{ data: data.map(x => x[1].valor), backgroundColor: ['#0062ff', '#6366f1', '#10b981'], borderWidth: 0 }] },
                         options: { plugins: { legend: { display: type === 'doughnut', position: 'bottom', labels: { color: '#64748b' } } } }
                     });
-                    cfg('c1', ${JSON.stringify(s30.ranking)}, 'bar');
-                    cfg('c2', ${JSON.stringify(s180.ranking)}, 'doughnut');
-                    cfg('c3', ${JSON.stringify(s365.ranking)}, 'bar');
+                    cfg('c1', ${JSON.stringify(s30.ranking)}, 'bar'); cfg('c2', ${JSON.stringify(s180.ranking)}, 'doughnut'); cfg('c3', ${JSON.stringify(s365.ranking)}, 'bar');
                 <\/script></body></html>
             `);
         }
