@@ -47,11 +47,12 @@
         </div>
     </header>
 
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
-        <div class="master-panel neon-border p-6"><p class="text-[10px] font-black text-slate-500 uppercase mb-3">Receita Hoje</p><h2 id="rec-hoje" class="text-2xl font-black text-white italic font-mono">R$ 0,00</h2></div>
-        <div class="master-panel neon-border p-6 border-indigo-500"><p class="text-[10px] font-black text-slate-500 uppercase mb-3">Projeção Mensal</p><h2 id="rec-mes" class="text-2xl font-black text-blue-400 italic font-mono">R$ 0,00</h2></div>
-        <div class="master-panel neon-border p-6 border-emerald-500"><p class="text-[10px] font-black text-slate-500 uppercase mb-3">Acumulado Anual</p><h2 id="rec-ano" class="text-2xl font-black text-emerald-400 italic font-mono">R$ 0,00</h2></div>
-        <div class="master-panel neon-border p-6 border-purple-500"><p class="text-[10px] font-black text-slate-500 uppercase mb-3">Carteira a Receber</p><h2 id="rec-total" class="text-2xl font-black text-purple-400 italic font-mono">R$ 0,00</h2></div>
+    <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-12">
+        <div class="master-panel neon-border p-5 border-blue-500"><p class="text-[9px] font-black text-slate-500 uppercase mb-2 tracking-widest">Hoje</p><h2 id="rec-hoje" class="text-xl font-black text-white italic font-mono">R$ 0,00</h2></div>
+        <div class="master-panel neon-border p-5 border-indigo-500"><p class="text-[9px] font-black text-slate-500 uppercase mb-2 tracking-widest">Semana</p><h2 id="rec-semana" class="text-xl font-black text-white italic font-mono">R$ 0,00</h2></div>
+        <div class="master-panel neon-border p-5 border-emerald-500"><p class="text-[9px] font-black text-slate-500 uppercase mb-2 tracking-widest">Mês</p><h2 id="rec-mes" class="text-xl font-black text-emerald-400 italic font-mono">R$ 0,00</h2></div>
+        <div class="master-panel neon-border p-5 border-amber-500"><p class="text-[9px] font-black text-slate-500 uppercase mb-2 tracking-widest">Ano</p><h2 id="rec-ano" class="text-xl font-black text-amber-500 italic font-mono">R$ 0,00</h2></div>
+        <div class="master-panel neon-border p-5 border-purple-500"><p class="text-[9px] font-black text-slate-500 uppercase mb-2 tracking-widest">Próximos 12 Meses</p><h2 id="rec-total" class="text-xl font-black text-purple-400 italic font-mono">R$ 0,00</h2></div>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-12">
@@ -74,10 +75,6 @@
                 <h3 class="text-[10px] font-black text-blue-500 uppercase mb-8 tracking-[0.4em] text-center">Top 5 Pagadores (Valor)</h3>
                 <canvas id="chartFast" height="300"></canvas>
             </div>
-            <div class="master-panel p-6 bg-gradient-to-br from-blue-900/10 to-transparent">
-                <p class="text-[9px] font-black text-blue-400 uppercase tracking-widest">Master Note</p>
-                <p class="text-xs text-slate-500 mt-2 leading-relaxed italic">"A inteligência financeira é o combustível da Euro Diesel. Dados auditados em tempo real por Leandrin®."</p>
-            </div>
         </div>
     </div>
 
@@ -89,6 +86,13 @@
             key: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNmcGRiemZhaXlyaHdpdGlmbGJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyNTg0MzgsImV4cCI6MjA5MDgzNDQzOH0.t84JuNn-qqBJyb-IPK0x4fbYTfsJK_R80Rp4SBpsupM"
         };
         const _db = supabase.createClient(CONFIG.url, CONFIG.key);
+
+        // MENSAGEM PROFISSIONAL DE COBRANÇA WHATSAPP
+        function cobrarCliente(cliente, valor, vencimento) {
+            const msg = `Olá, tudo bem? Aqui é o Leandro, Gerente Financeiro da EURO DIESEL. Gostaria de informar que consta em nosso sistema um título em aberto para ${cliente} no valor de R$ ${valor}, com vencimento em ${vencimento}. Poderia confirmar o recebimento do boleto ou o status do pagamento? Ficamos à disposição. Atenciosamente, Leandro (Financeiro Euro Diesel).`;
+            const url = `https://wa.me/?text=${encodeURIComponent(msg)}`;
+            window.open(url, '_blank');
+        }
 
         async function processarPDFDinamico(input) {
             const file = input.files[0];
@@ -128,10 +132,7 @@
                     status: "pendente"
                 }]);
 
-                if (!error) {
-                    alert(`MASTER IA: ${cliente} identificado. Importação concluída.`);
-                    carregarContabilidade();
-                }
+                if (!error) carregarContabilidade();
             };
             reader.readAsArrayBuffer(file);
         }
@@ -141,7 +142,7 @@
             if (error) return;
 
             const hoje = new Date(); hoje.setHours(0,0,0,0);
-            let totals = { hoje: 0, mes: 0, ano: 0, total: 0 };
+            let totals = { hoje: 0, semana: 0, mes: 0, ano: 0, total: 0 };
             let rankingValor = {};
 
             const corpo = document.getElementById('audit-body');
@@ -156,25 +157,27 @@
                 } else {
                     totals.total += valor;
                     if (venci.toDateString() === hoje.toDateString()) totals.hoje += valor;
-                    if (venci.getMonth() === hoje.getMonth()) totals.mes += valor;
+                    if (venci >= hoje && venci <= new Date(hoje.getTime() + 7 * 24 * 60 * 60 * 1000)) totals.semana += valor;
+                    if (venci.getMonth() === hoje.getMonth() && venci.getFullYear() === hoje.getFullYear()) totals.mes += valor;
                     if (venci.getFullYear() === hoje.getFullYear()) totals.ano += valor;
 
                     corpo.innerHTML += `
                         <tr class="hover:bg-blue-600/5 transition group">
                             <td class="p-6">
                                 <span class="text-xs font-black text-white uppercase tracking-wider">${item.cliente}</span><br>
-                                <span class="text-[9px] text-slate-500 font-bold tracking-widest">EMIS: 2026 | VENC: ${venci.toLocaleDateString()}</span>
+                                <span class="text-[9px] text-slate-500 font-bold tracking-widest uppercase">VENCIMENTO: ${venci.toLocaleDateString()}</span>
                             </td>
                             <td class="p-6 text-right font-mono font-bold text-white text-sm">R$ ${valor.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
                             <td class="p-6 text-right flex gap-3 justify-end opacity-40 group-hover:opacity-100 transition">
                                 <button onclick="baixar(${item.id})" class="text-[9px] font-black uppercase py-2 px-5 rounded-lg border border-emerald-500/50 text-emerald-500 hover:bg-emerald-500 hover:text-white transition">Baixa</button>
-                                <button onclick="window.open('https://wa.me/')" class="text-[9px] font-black uppercase py-2 px-5 rounded-lg border border-blue-500/50 text-blue-500 hover:bg-blue-500 hover:text-white transition">Cobrar</button>
+                                <button onclick="cobrarCliente('${item.cliente}', '${valor.toLocaleString('pt-BR', {minimumFractionDigits: 2})}', '${venci.toLocaleDateString()}')" class="text-[9px] font-black uppercase py-2 px-5 rounded-lg border border-blue-500/50 text-blue-500 hover:bg-blue-500 hover:text-white transition">Cobrar</button>
                             </td>
                         </tr>`;
                 }
             });
 
             document.getElementById('rec-hoje').innerText = "R$ " + totals.hoje.toLocaleString('pt-BR', {minimumFractionDigits: 2});
+            document.getElementById('rec-semana').innerText = "R$ " + totals.semana.toLocaleString('pt-BR', {minimumFractionDigits: 2});
             document.getElementById('rec-mes').innerText = "R$ " + totals.mes.toLocaleString('pt-BR', {minimumFractionDigits: 2});
             document.getElementById('rec-ano').innerText = "R$ " + totals.ano.toLocaleString('pt-BR', {minimumFractionDigits: 2});
             document.getElementById('rec-total').innerText = "R$ " + totals.total.toLocaleString('pt-BR', {minimumFractionDigits: 2});
@@ -239,57 +242,24 @@
                         <h1 class="text-4xl font-black italic glow tracking-tighter uppercase">Relatório de Alta Performance</h1>
                         <p class="text-slate-500 text-xs tracking-[5px] font-bold mt-2">EURO DIESEL FINANCE | LEANDRIN® MASTER</p>
                     </div>
-                    <div class="text-right">
-                        <p class="text-[10px] text-blue-500 font-black uppercase">Data da Extração</p>
-                        <p class="text-lg font-mono">${new Date().toLocaleDateString()}</p>
-                    </div>
                 </header>
 
                 <div class="grid grid-cols-3 gap-8 mb-12">
-                    <div class="card-bi p-8 text-center border-l-4 border-blue-500">
-                        <p class="text-[10px] text-slate-500 font-black uppercase mb-2 tracking-widest">Faturamento 30 Dias</p>
-                        <h2 class="text-3xl font-black">R$ ${s30.total.toLocaleString('pt-BR')}</h2>
-                    </div>
-                    <div class="card-bi p-8 text-center border-l-4 border-indigo-500">
-                        <p class="text-[10px] text-slate-500 font-black uppercase mb-2 tracking-widest">Ticket Médio Cliente</p>
-                        <h2 class="text-3xl font-black">R$ ${s30.media.toLocaleString('pt-BR', {maximumFractionDigits:0})}</h2>
-                    </div>
-                    <div class="card-bi p-8 text-center border-l-4 border-emerald-500">
-                        <p class="text-[10px] text-slate-500 font-black uppercase mb-2 tracking-widest">Volume Anual Processado</p>
-                        <h2 class="text-3xl font-black">R$ ${s365.total.toLocaleString('pt-BR')}</h2>
-                    </div>
+                    <div class="card-bi p-8 text-center border-l-4 border-blue-500"><p class="text-[10px] text-slate-500 font-black uppercase mb-2">Faturamento 30 Dias</p><h2 class="text-3xl font-black">R$ ${s30.total.toLocaleString('pt-BR')}</h2></div>
+                    <div class="card-bi p-8 text-center border-l-4 border-indigo-500"><p class="text-[10px] text-slate-500 font-black uppercase mb-2">Ticket Médio</p><h2 class="text-3xl font-black">R$ ${s30.media.toLocaleString('pt-BR', {maximumFractionDigits:0})}</h2></div>
+                    <div class="card-bi p-8 text-center border-l-4 border-emerald-500"><p class="text-[10px] text-slate-500 font-black uppercase mb-2">Volume Anual</p><h2 class="text-3xl font-black">R$ ${s365.total.toLocaleString('pt-BR')}</h2></div>
                 </div>
 
                 <div class="grid grid-cols-3 gap-8">
-                    <div class="card-bi p-8">
-                        <h3 class="text-xs font-black text-blue-500 uppercase tracking-widest mb-6">Mês Atual: Valor vs Frequência</h3>
-                        <canvas id="c1"></canvas>
-                    </div>
-                    <div class="card-bi p-8">
-                        <h3 class="text-xs font-black text-indigo-500 uppercase tracking-widest mb-6">6 Meses: Market Share</h3>
-                        <canvas id="c2"></canvas>
-                    </div>
-                    <div class="card-bi p-8">
-                        <h3 class="text-xs font-black text-emerald-500 uppercase tracking-widest mb-6">12 Meses: Projeção de Crescimento</h3>
-                        <canvas id="c3"></canvas>
-                    </div>
+                    <div class="card-bi p-8"><h3>Ranking 30 Dias (Valor/Qtd)</h3><canvas id="c1"></canvas></div>
+                    <div class="card-bi p-8"><h3>6 Meses: Market Share</h3><canvas id="c2"></canvas></div>
+                    <div class="card-bi p-8"><h3>12 Meses: Projeção</h3><canvas id="c3"></canvas></div>
                 </div>
 
                 <script>
                     const cfg = (id, data, type) => new Chart(document.getElementById(id), {
-                        type: type, 
-                        data: { 
-                            labels: data.map(x => x[0] + " (" + x[1].qtd + ")"), 
-                            datasets: [{ 
-                                data: data.map(x => x[1].valor), 
-                                backgroundColor: ['#0062ff', '#6366f1', '#10b981', '#f59e0b', '#ec4899'],
-                                borderWidth: 0
-                            }] 
-                        },
-                        options: { 
-                            plugins: { legend: { display: type === 'doughnut', position: 'bottom', labels: { color: '#64748b', font: {size: 10}} } },
-                            scales: type === 'bar' ? { y: { ticks: { color: 'white' } } } : {}
-                        }
+                        type: type, data: { labels: data.map(x => x[0] + " (" + x[1].qtd + ")"), datasets: [{ data: data.map(x => x[1].valor), backgroundColor: ['#0062ff', '#6366f1', '#10b981'], borderWidth: 0 }] },
+                        options: { plugins: { legend: { display: type === 'doughnut', position: 'bottom', labels: { color: '#64748b' } } } }
                     });
                     cfg('c1', ${JSON.stringify(s30.ranking)}, 'bar');
                     cfg('c2', ${JSON.stringify(s180.ranking)}, 'doughnut');
