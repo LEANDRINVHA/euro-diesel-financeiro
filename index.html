@@ -8,12 +8,11 @@
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <style>
         .bg-euro { background-color: #0f172a; }
         .card-lux { background: white; border-radius: 1.5rem; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
         .btn-grad { background: linear-gradient(90deg, #2563eb 0%, #1d4ed8 100%); transition: 0.3s; }
-        
-        /* Alerta de Inadimplência Crítica */
         .alerta-critico { background-color: #fef2f2 !important; animation: pulse-red 2s infinite; }
         @keyframes pulse-red {
             0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
@@ -87,7 +86,7 @@
     </main>
 
     <script>
-        // Configuração Supabase
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
         const _supabase = supabase.createClient('https://sfpdbzfaiyrhwitiflbv.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNmcGRiemZhaXlyaHdpdGlmbGJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyNTg0MzgsImV4cCI6MjA5MDgzNDQzOH0.t84JuNn-qqBJyb-IPK0x4fbYTfsJK_R80Rp4SBpsupM');
         
         let chartInstance;
@@ -95,52 +94,62 @@
         const MEU_NOME = "Leandrin®";
         const MEU_CARGO = "Gerente Financeiro Master";
 
-        // --- MOTOR DE IMPORTAÇÃO (O QUE ESTAVA FALTANDO) ---
+        // --- IMPORTAÇÃO INTELIGENTE (OCR REAL) ---
         document.getElementById('pdf-upload').addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (!file) return;
 
-            alert("Iniciando leitura inteligente do boleto... Aguarde.");
+            alert("Iniciando leitura inteligente do boleto...");
 
-            // Aqui o sistema usa o motor de busca para achar o nome do cliente
-            // Simulando a extração baseada no caminho que você me mostrou:
-            // "Nome do Pagador/CPF/CNPJ/Endereço/Cidade/UF/CEP" -> Linha de Baixo
-            
-            let nomeCliente = "";
-            let valorBoleto = 0;
-            let dataVencimento = "";
+            const reader = new FileReader();
+            reader.onload = async function() {
+                try {
+                    const typedarray = new Uint8Array(this.result);
+                    const pdf = await pdfjsLib.getDocument(typedarray).promise;
+                    const page = await pdf.getPage(1);
+                    const textContent = await page.getTextContent();
+                    const texto = textContent.items.map(s => s.str).join(" ");
 
-            // Lógica de Identificação Euro Diesel
-            if (file.name.includes("ANDREIS")) {
-                nomeCliente = "Andreis Transportes Ltda";
-                valorBoleto = 520.00;
-                dataVencimento = "2026-04-23";
-            } else if (file.name.includes("RODOAMAZONIA")) {
-                nomeCliente = "RODOAMAZONIA TRANSPORTE RODOVIARIO";
-                valorBoleto = 1250.00; // Exemplo
-                dataVencimento = "2026-04-30";
-            } else {
-                nomeCliente = "NOVO CLIENTE IDENTIFICADO";
-                valorBoleto = 0;
-                dataVencimento = new Date().toISOString().split('T')[0];
-            }
+                    // EXTRAÇÃO DE DADOS
+                    let cliente = "CLIENTE DESCONHECIDO";
+                    let valor = 0;
+                    let vencimento = new Date().toISOString().split('T')[0];
 
-            // Envia para o Banco de Dados
-            const { error } = await _supabase.from('controle_financeiro').insert([
-                { 
-                    cliente: nomeCliente, 
-                    valor_nominal: valorBoleto, 
-                    vencimento: dataVencimento,
-                    status: 'pendente'
+                    // 1. Acha o Cliente (Baseado no campo "Pagador" ou nomes conhecidos)
+                    if (texto.includes("Andreis Transportes")) cliente = "ANDREIS TRANSPORTES LTDA";
+                    else if (texto.includes("RODOAMAZONIA")) cliente = "RODOAMAZONIA TRANSPORTE";
+                    else {
+                        // Tenta pegar o texto após "Pagador" se não for os fixos
+                        const matchPagador = texto.match(/Pagador\s+([A-Z\s]{5,40})/);
+                        if (matchPagador) cliente = matchPagador[1].trim();
+                    }
+
+                    // 2. Acha o Valor (ex: 520,00)
+                    const matchValor = texto.match(/(\d{1,3}(\.\d{3})*,\d{2})/);
+                    if (matchValor) valor = parseFloat(matchValor[0].replace('.', '').replace(',', '.'));
+
+                    // 3. Acha a Data (DD/MM/AAAA)
+                    const matchData = texto.match(/(\d{2}\/\d{2}\/\d{4})/g);
+                    if (matchData) {
+                        // Pega a última data encontrada no topo (geralmente vencimento)
+                        const dStr = matchData[matchData.length - 1];
+                        const [d, m, a] = dStr.split('/');
+                        vencimento = `${a}-${m}-${d}`;
+                    }
+
+                    // SALVAR NO BANCO
+                    const { error } = await _supabase.from('controle_financeiro').insert([
+                        { cliente: cliente.toUpperCase(), valor_nominal: valor, vencimento: vencimento, status: 'pendente' }
+                    ]);
+
+                    if (error) throw error;
+                    alert(`IMPORTADO COM SUCESSO!\nCliente: ${cliente}\nValor: R$ ${valor.toFixed(2)}`);
+                    processarFinanceiro();
+                } catch (err) {
+                    alert("Erro na leitura: " + err.message);
                 }
-            ]);
-
-            if (error) {
-                alert("Erro ao salvar no banco: " + error.message);
-            } else {
-                alert("Sucesso! Cliente " + nomeCliente + " importado para o sistema.");
-                processarFinanceiro();
-            }
+            };
+            reader.readAsArrayBuffer(file);
         });
 
         async function processarFinanceiro() {
