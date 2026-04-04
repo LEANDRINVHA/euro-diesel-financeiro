@@ -100,8 +100,30 @@
         };
         const _db = supabase.createClient(CONFIG.url, CONFIG.key);
 
-        function cobrarCliente(cliente, valor, vencimento) {
-            const msg = `Olá, tudo bem? Aqui é o Leandro, Gerente Financeiro da EURO DIESEL. Gostaria de informar que consta em nosso sistema um título em aberto para ${cliente} no valor de R$ ${valor}, com vencimento em ${vencimento}. Poderia confirmar o recebimento do boleto ou o status do pagamento? Ficamos à disposição. Atenciosamente, Leandro (Gerente Financeiro Euro Diesel).`;
+        function cobrarCliente(cliente, valor, vencimento, codigo) {
+            // Se houver código, ele é formatado em negrito para facilitar cópia no Zap
+            const infoCodigo = codigo 
+                ? `\n\n*LINHA DIGITÁVEL PARA PAGAMENTO:*\n${codigo}` 
+                : "";
+
+            const msg = `*EURO DIESEL | DEPARTAMENTO FINANCEIRO* 📊
+            
+Prezado(a) *${cliente}*,
+
+Espero que este contato o encontre bem. Sou o *Leandrin®*, Gerente Financeiro Master da Euro Diesel.
+
+Informamos que, em nossa última auditoria de conciliação bancária, o título no valor de *R$ ${valor}*, com vencimento original em *${vencimento}*, ainda não foi identificado em nosso sistema.
+
+${infoCodigo}
+
+*SEGURANÇA:* Por diretrizes de Compliance, solicitamos que, antes de confirmar a operação, verifique se o beneficiário final é *EURO DIESEL*. Este procedimento garante a integridade da sua transação.
+
+Poderia nos enviar o comprovante ou confirmar a previsão de pagamento?
+
+Atenciosamente,
+*Leandrin®*
+_Gerência Financeira Master - Euro Diesel_`;
+
             window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
         }
 
@@ -173,8 +195,8 @@
             const { data } = await _db.from('controle_financeiro').select('*');
             const hoje = new Date(); hoje.setHours(0,0,0,0);
             
-            let aRec = { hoje: 0, sem: 0, mes: 0, ano: 0, total: 0 };
-            let pag = { hoje: 0, sem: 0, mes: 0, ano: 0, total: 0 };
+            let aRec = { hoje: 0, total: 0 };
+            let pag = { total: 0 };
             let ranking = {};
 
             const corpo = document.getElementById('audit-body');
@@ -195,6 +217,7 @@
                     const isVencido = venci < hoje;
                     const isHoje = venci.toDateString() === hoje.toDateString();
                     
+                    // AQUI ATUALIZEI O BOTÃO COBRAR PARA ENVIAR O CÓDIGO
                     corpo.innerHTML += `
                         <tr class="hover:bg-white/5 transition ${isVencido ? 'alert-vencido' : ''} ${isHoje ? 'alert-vencer' : ''}">
                             <td class="p-6">
@@ -207,7 +230,7 @@
                             <td class="p-6 text-right flex gap-2 justify-end">
                                 ${codigo ? `<button onclick="copiarCodigo('${codigo}')" class="text-[9px] font-black uppercase p-2 rounded bg-blue-600/20 text-blue-400 border border-blue-600/30">Copiar Código</button>` : ''}
                                 <button onclick="baixar(${item.id})" class="text-[9px] font-black uppercase p-2 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">Baixar</button>
-                                <button onclick="cobrarCliente('${item.cliente}', '${valor}', '${venci.toLocaleDateString()}')" class="text-[9px] font-black uppercase p-2 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30">Cobrar</button>
+                                <button onclick="cobrarCliente('${item.cliente}', '${valor.toLocaleString('pt-BR', {minimumFractionDigits:2})}', '${venci.toLocaleDateString()}', '${codigo}')" class="text-[9px] font-black uppercase p-2 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30">Cobrar</button>
                             </td>
                         </tr>`;
                 }
@@ -297,27 +320,12 @@
                                         </tbody>
                                     </table>
                                 </div>
-
-                                <div class="glass p-8 rounded-2xl">
-                                    <h3 class="text-[10px] font-black uppercase text-blue-500 mb-4 tracking-widest">Parecer da Gerência Financeira</h3>
-                                    <div class="text-sm text-slate-400 leading-relaxed space-y-4">
-                                        <p>Relatório executivo consolidando os dados de faturamento e fluxo de caixa da <strong class="text-white italic">Euro Diesel</strong>. Atualmente, a taxa de inadimplência representa <strong class="text-red-500">${((totalVenc/(totalPend+totalPago+0.001))*100).toFixed(2)}%</strong> do volume total histórico.</p>
-                                        <div class="p-4 bg-blue-500/5 border-l border-blue-500 text-[11px] italic text-blue-300">
-                                            RECOMENDAÇÃO: Priorizar conciliação imediata dos títulos vencidos acima de 72h para manutenção de CAPEX operacional.
-                                        </div>
-                                    </div>
-                                </div>
                             </div>
 
                             <div class="space-y-6">
                                 <div class="glass p-8 rounded-2xl text-center">
                                     <h3 class="text-[9px] font-black uppercase text-slate-500 mb-6 italic">Composição de Ativos</h3>
                                     <canvas id="relChartPremium"></canvas>
-                                </div>
-                                <div class="glass p-8 rounded-2xl text-center bg-blue-600/20 border-blue-500">
-                                    <p class="text-[10px] font-black uppercase text-blue-100 mb-2">Saúde Financeira</p>
-                                    <h4 class="text-4xl font-black italic">${((totalPago/(totalPend+totalPago+0.001))*100).toFixed(0)}%</h4>
-                                    <p class="text-[9px] text-blue-400 mt-2 uppercase font-bold tracking-widest">Índice de Liquidez Total</p>
                                 </div>
                             </div>
                         </div>
@@ -340,14 +348,10 @@
                                 datasets: [{ 
                                     data: [${totalVenc}, ${totalPend - totalVenc}, ${totalPago}], 
                                     backgroundColor: ['#ef4444', '#1e293b', '#0062ff'], 
-                                    borderWidth: 0,
-                                    hoverOffset: 10
+                                    borderWidth: 0
                                 }]
                             },
-                            options: { 
-                                cutout: '70%',
-                                plugins: { legend: { position: 'bottom', labels: { color: '#64748b', font: {size: 10, weight: 'bold'}, padding: 20 } } } 
-                            }
+                            options: { cutout: '70%', plugins: { legend: { position: 'bottom', labels: { color: '#64748b', font: {size: 10, weight: 'bold'}}}}}
                         });
                     <\/script>
                 </body></html>
