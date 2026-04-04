@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <title>EURO DIESEL | Contabilidade de Precisão</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+<script src="https://unpkg.com/tesseract.js@v4.0.1/dist/tesseract.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
@@ -87,6 +89,63 @@
         async function processarFinanceiro() {
             const { data, error } = await _supabase.from('controle_financeiro').select('*');
             if (error) return;
+            document.getElementById('pdf-upload').addEventListener('change', async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    alert("Leandrin®, a IA está processando o boleto... Aguarde um instante.");
+
+    // 1. Carregar o PDF
+    const reader = new FileReader();
+    reader.onload = async function() {
+        const typedarray = new Uint8Array(this.result);
+        const pdf = await pdfjsLib.getDocument(typedarray).promise;
+        const page = await pdf.getPage(1); // Lemos a primeira página
+        
+        // 2. Transformar PDF em Imagem (Canvas) para a IA ler
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        const viewport = page.getViewport({ scale: 2 });
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+
+        await page.render({ canvasContext: context, viewport: viewport }).promise;
+
+        // 3. Tesseract IA lendo o texto da imagem
+        const { data: { text } } = await Tesseract.recognize(canvas, 'por');
+
+        console.log("Texto extraído:", text); // Para você ver no console o que ele leu
+
+        // 4. Lógica de extração (Exemplo simplificado)
+        // Aqui a IA procura padrões. Ex: "Vencimento: 23/04/2026"
+        const extrairValor = text.match(/R\$\s?(\d+[,.]\d{2})/);
+        const extrairVencimento = text.match(/(\d{2}\/\d{2}\/\d{4})/);
+        const extrairCliente = text.match(/(?:Beneficiário|Sacado|Cliente):\s?([A-Z\s]+)/i);
+
+        // 5. Enviar para o Supabase
+        const novoBoleto = {
+            cliente: extrairCliente ? extrairCliente[1].trim() : "Cliente Identificado via IA",
+            valor_nominal: extrairValor ? parseFloat(extrairValor[1].replace(',', '.')) : 0,
+            vencimento: extrairVencimento ? converterData(extrairVencimento[1]) : new Date().toISOString().split('T')[0],
+            documento_numero: "PDF-" + Math.floor(Math.random() * 1000),
+            status: 'pendente'
+        };
+
+        const { error } = await _supabase.from('controle_financeiro').insert([novoBoleto]);
+        
+        if (!error) {
+            alert("Boleto processado e salvo com sucesso!");
+            processarFinanceiro(); // Atualiza o dashboard na hora
+        }
+    };
+    reader.readAsArrayBuffer(file);
+});
+
+// Função auxiliar para converter 23/04/2026 para 2026-04-23 (formato do banco)
+function converterData(dataBr) {
+    const [dia, mes, ano] = dataBr.split('/');
+    return `${ano}-${mes}-${dia}`;
+}
 
             let totais = { hoje: 0, semana: 0, mes: 0, ano: 0, futuro: 0 };
             const corpo = document.getElementById('tabela-contabil');
