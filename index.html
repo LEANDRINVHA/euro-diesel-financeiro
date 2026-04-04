@@ -32,7 +32,21 @@
             </div>
             <p class="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Responsável Técnico: <span class="text-slate-300">Leandrin® Master Admin</span></p>
         </div>
-        <button onclick="carregarContabilidade()" class="btn-action text-white px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 transition">Sincronizar Banco de Dados</button>
+
+        <div class="flex flex-wrap gap-3">
+            <button onclick="document.getElementById('fileInput').click()" class="btn-action text-white px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+                <span class="text-blue-500 text-lg">📄</span> Importar Boletos
+            </button>
+            <input type="file" id="fileInput" class="hidden" accept=".pdf" multiple>
+
+            <button onclick="gerarRelatorio()" class="btn-action text-white px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 border-emerald-500/30">
+                <span class="text-emerald-500 text-lg">📊</span> Gerar Relatório
+            </button>
+
+            <button onclick="carregarContabilidade()" class="bg-blue-600 text-white px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition shadow-lg shadow-blue-900/40">
+                Sincronizar Banco
+            </button>
+        </div>
     </header>
 
     <div class="grid-header mb-10">
@@ -124,7 +138,6 @@
                     resumo.brutoTotal += total;
                     resumo.count++;
 
-                    // Lógica de Distribuição Temporal
                     if (venci.getTime() === hoje.getTime()) resumo.hoje += total;
                     if (venci >= hoje && venci <= fimSemana) resumo.semana += total;
                     if (venci >= hoje && venci <= fimMes) resumo.mes += total;
@@ -146,8 +159,8 @@
                             </td>
                             <td class="p-5 text-center">
                                 <div class="flex gap-2 justify-center">
-                                    <button onclick="baixar(${item.id})" class="text-[9px] font-black uppercase py-2 px-3 rounded bg-emerald-600/20 text-emerald-500 hover:bg-emerald-600 hover:text-white transition">Baixa</button>
-                                    <button onclick="cobrar('${item.cliente}', '${total.toFixed(2)}')" class="text-[9px] font-black uppercase py-2 px-3 rounded bg-blue-600/20 text-blue-500 border border-blue-500/30 hover:bg-blue-600 hover:text-white transition">Cobrar</button>
+                                    <button onclick="baixar(${item.id})" class="text-[9px] font-black uppercase py-2 px-4 rounded bg-emerald-600/20 text-emerald-500 hover:bg-emerald-600 hover:text-white transition">Baixa</button>
+                                    <button onclick="cobrar('${item.cliente}', '${total.toFixed(2)}')" class="text-[9px] font-black uppercase py-2 px-4 rounded bg-blue-600/20 text-blue-500 border border-blue-500/30 hover:bg-blue-600 hover:text-white transition">Cobrar</button>
                                 </div>
                             </td>
                         </tr>`;
@@ -156,7 +169,6 @@
 
             const fmt = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
             
-            // Atualizar Novos Cards
             document.getElementById('rec-hoje').innerText = fmt(resumo.hoje);
             document.getElementById('rec-semana').innerText = fmt(resumo.semana);
             document.getElementById('rec-mes').innerText = fmt(resumo.mes);
@@ -164,7 +176,6 @@
             document.getElementById('rec-12meses').innerText = fmt(resumo.m12);
             document.getElementById('total-titulos').innerText = `${resumo.count} TÍTULOS ATIVOS`;
 
-            // DRE
             document.getElementById('dre-list').innerHTML = `
                 ${renderLinhaDRE("Faturamento Projetado", resumo.brutoTotal, "text-white")}
                 ${renderLinhaDRE("(-) Simples Nac. (6%)", -(resumo.brutoTotal * 0.06), "text-red-500")}
@@ -193,6 +204,26 @@
                 await _db.from('controle_financeiro').update({ status: 'pago' }).eq('id', id);
                 carregarContabilidade();
             }
+        }
+
+        function gerarRelatorio() {
+            const dataStr = new Date().toLocaleDateString('pt-BR');
+            let conteudo = `RELATÓRIO FINANCEIRO EURO DIESEL - ${dataStr}\n`;
+            conteudo += `RESPONSÁVEL: ${CONFIG.nome}\n`;
+            conteudo += `-------------------------------------------\n\n`;
+            
+            const linhas = document.querySelectorAll('#audit-body tr');
+            linhas.forEach(l => {
+                const cli = l.querySelector('span.text-sm').innerText;
+                const val = l.querySelector('span.text-mono').innerText;
+                conteudo += `CLIENTE: ${cli} | VALOR: ${val}\n`;
+            });
+
+            const blob = new Blob([conteudo], { type: 'text/plain' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `FINANCEIRO_EURODIESEL_${dataStr.replace(/\//g, '-')}.txt`;
+            link.click();
         }
 
         let chart;
