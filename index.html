@@ -96,46 +96,80 @@
             window.open(`https://wa.me/5569999999999?text=${encodeURIComponent(msg)}`, '_blank');
         }
 
-        async function processarFinanceiro() {
-            const { data, error } = await _supabase.from('controle_financeiro').select('*');
-            if(error) return;
+        // CONFIGURAÇÃO DE CONTATO DA EURO DIESEL
+const MEU_WHATSAPP = "5569981128233";
+const MEU_NOME = "Leandro";
+const MEU_CARGO = "Gerente Financeiro Master";
 
-            const corpo = document.getElementById('tabela-corpo');
-            corpo.innerHTML = '';
-            let stats = { total: 0, atrasado: 0, recebido: 0, semana: 0 };
-            let chartData = {};
+function cobrarWhatsApp(cliente, valor, vencimento) {
+    // Mensagem estruturada para passar credibilidade de alto nível
+    const saudacao = new Date().getHours() < 12 ? "Bom dia" : "Boa tarde";
+    
+    const mensagem = 
+`${saudacao}, 
 
-            const hoje = new Date(); hoje.setHours(0,0,0,0);
+Aqui é o *${MEU_NOME}*, ${MEU_CARGO} da *EURO DIESEL MECATRÔNICA*.
 
-            data.forEach(item => {
-                const venci = new Date(item.vencimento + 'T12:00:00');
-                const diff = Math.floor((hoje - venci) / (1000*60*60*24));
-                const multa = diff > 0 && item.status !== 'pago' ? item.valor_nominal * 0.05 + (item.valor_nominal * 0.0017 * diff) : 0;
-                const total = item.valor_nominal + multa;
+Constatamos em nosso sistema de auditoria que o título no valor de *R$ ${valor}*, com vencimento em *${vencimento}*, ainda não consta como liquidado em nossa conta corrente.
 
-                if(item.status === 'pago') {
-                    stats.recebido += item.valor_nominal;
-                } else {
-                    stats.total += total;
-                    if(diff > 0) stats.atrasado += total;
-                    if(diff <= 0 && diff >= -7) stats.semana += total;
+Caso o pagamento já tenha sido efetuado via PIX ou Boleto, pedimos a gentileza de nos encaminhar o comprovante por aqui para realizarmos a baixa imediata em seu cadastro.
 
-                    corpo.innerHTML += `
-                        <tr class="hover:bg-slate-50 transition">
-                            <td class="p-4">
-                                <span class="text-[9px] font-black ${diff > 0 ? 'text-red-500' : 'text-green-500'}">● ${diff > 0 ? 'ATRASADO '+diff+'D' : 'EM DIA'}</span><br>
-                                <b class="text-slate-800">${item.cliente}</b><br>
-                                <span class="text-[10px] text-slate-400">Venc: ${venci.toLocaleDateString('pt-BR')}</span>
-                            </td>
-                            <td class="p-4 text-right font-black text-blue-900 italic">R$ ${total.toFixed(2)}</td>
-                            <td class="p-4 text-center">
-                                <div class="flex gap-2 justify-center">
-                                    <button onclick="darBaixa(${item.id})" class="bg-green-500 text-white p-2 rounded-lg text-[9px] font-bold uppercase">OK</button>
-                                    <button onclick="cobrarWhatsApp('${item.cliente}', '${total.toFixed(2)}', '${venci.toLocaleDateString('pt-BR')}')" class="bg-emerald-600 text-white p-2 rounded-lg text-[9px] font-bold uppercase">ZAP</button>
-                                </div>
-                            </td>
-                        </tr>`;
-                }
+Ficamos à disposição para qualquer dúvida.
+Atenciosamente,
+*Departamento Financeiro | EURO DIESEL*`;
+
+    const url = `https://wa.me/${MEU_WHATSAPP}?text=${encodeURIComponent(mensagem)}`;
+    window.open(url, '_blank');
+}
+
+// Atualização da Tabela para incluir os botões com a nova lógica
+async function processarFinanceiro() {
+    const { data, error } = await _supabase.from('controle_financeiro').select('*').order('vencimento', { ascending: true });
+    if (error) return;
+
+    const corpo = document.getElementById('tabela-corpo');
+    corpo.innerHTML = '';
+    const hoje = new Date(); hoje.setHours(0,0,0,0);
+
+    data.forEach(item => {
+        if(item.status === 'pago') return;
+
+        const venci = new Date(item.vencimento + 'T12:00:00');
+        const diff = Math.floor((hoje - venci) / (1000*60*60*24));
+        const multa = diff > 0 ? item.valor_nominal * 0.05 + (item.valor_nominal * 0.0017 * diff) : 0;
+        const total = item.valor_nominal + multa;
+
+        corpo.innerHTML += `
+            <tr class="hover:bg-blue-50 transition border-b border-slate-100">
+                <td class="p-4">
+                    <span class="text-[9px] font-black ${diff > 0 ? 'text-red-500' : 'text-green-500'}">
+                        ● ${diff > 0 ? 'PENDÊNCIA DE '+diff+' DIAS' : 'DENTRO DO PRAZO'}
+                    </span><br>
+                    <b class="text-slate-800 uppercase text-xs">${item.cliente}</b><br>
+                    <span class="text-[10px] text-slate-400 font-bold">VENCIMENTO: ${venci.toLocaleDateString('pt-BR')}</span>
+                </td>
+                <td class="p-4 text-right">
+                    <div class="text-[10px] text-slate-400 italic leading-none">Total com encargos</div>
+                    <div class="font-black text-blue-900 text-base">R$ ${total.toFixed(2)}</div>
+                </td>
+                <td class="p-4">
+                    <div class="flex flex-col gap-2">
+                        <button onclick="darBaixa(${item.id})" 
+                            class="bg-green-600 hover:bg-green-700 text-white py-2 px-3 rounded-lg text-[10px] font-black uppercase shadow-sm">
+                            Confirmar PIX / Pago
+                        </button>
+                        <button onclick="cobrarWhatsApp('${item.cliente}', '${total.toFixed(2)}', '${venci.toLocaleDateString('pt-BR')}')" 
+                            class="border border-emerald-500 text-emerald-600 hover:bg-emerald-50 py-2 px-3 rounded-lg text-[10px] font-black uppercase transition text-center">
+                            Cobrança Direta (WhatsApp)
+                        </button>
+                    </div>
+                </td>
+            </tr>`;
+    });
+    
+    // Chamada para atualizar os cards de resumo e gráficos (que já temos no código anterior)
+    atualizarCardsEResumos(data); 
+}
 
                 // Dados Gráfico
                 const mes = venci.toLocaleString('pt-BR', { month: 'short' }).toUpperCase();
