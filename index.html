@@ -228,10 +228,17 @@
                 const lines = textContent.items.map(s => s.str);
                 const fullText = lines.join(' ');
                 
-                // 1. Onde pega o Vencimento (Regex para encontrar data após label ou isolada)
-                let vencimentoISO = "";
-                const dateMatch = fullText.match(/(\d{2}\/\d{2}\/\d{4})/);
-                if (dateMatch) vencimentoISO = dateMatch[0].split('/').reverse().join('-');
+                // 1. Onde pega o Vencimento (Melhorado para ignorar a data de emissão)
+let vencimentoISO = "";
+const todasDatas = fullText.match(/(\d{2}\/\d{2}\/\d{4})/g); 
+
+if (todasDatas && todasDatas.length >= 2) {
+    // Em boletos CrediSIS, o vencimento costuma ser a segunda ou última data que aparece no texto
+    // Pegamos a última para garantir que ignoramos a data de emissão/processamento
+    vencimentoISO = todasDatas[todasDatas.length - 1].split('/').reverse().join('-');
+} else if (todasDatas) {
+    vencimentoISO = todasDatas[0].split('/').reverse().join('-');
+}
 
                 // 2. Onde pega o Valor
                 const valorMatch = fullText.match(/(\d{1,3}(\.\d{3})*,\d{2})/);
