@@ -103,7 +103,6 @@
         };
         const _db = supabase.createClient(CONFIG.url, CONFIG.key);
 
-        // FUNÇÕES ORIGINAIS MANTIDAS 100%
         function cobrarCliente(cliente, valor, vencimento, codigo) {
             const infoCodigo = codigo ? `\n\n*LINHA DIGITÁVEL PARA PAGAMENTO:*\n${codigo}` : "";
             const msg = `*EURO DIESEL | DEPARTAMENTO FINANCEIRO* 📊\n\nPrezado(a) *${cliente}*,\n\nSou o *Leandrin®*, Gerente Financeiro Master da Euro Diesel. Identificamos que o título de *R$ ${valor}*, com vencimento em *${vencimento}*, ainda consta em aberto.\n\n${infoCodigo}\n\n*SEGURANÇA:* Verifique se o beneficiário final é *EURO DIESEL*.\n\nAtenciosamente,\n*Leandrin®*`;
@@ -120,13 +119,10 @@
             carregarContabilidade();
         }
 
-        // NOVO MOTOR DE INTEGRAÇÃO CONTÁBIL IA
         async function carregarContabilidade() {
             const { data } = await _db.from('controle_financeiro').select('*');
             const hoje = new Date(); hoje.setHours(0,0,0,0);
             
-            // Lógica de Datas para Integralização
-            const diffDays = (d1, d2) => Math.ceil((d1 - d2) / (1000 * 60 * 60 * 24));
             const getWeek = (d) => {
                 const target = new Date(d);
                 const dayNr = (d.getDay() + 6) % 7;
@@ -137,18 +133,19 @@
             };
 
             let aRec = { hoje: 0, semana: 0, mes: 0, ano: 0, total: 0 };
-            let pag = { hoje: 0, semana: 0, mes: 0, ano: 0, total: 0 };
+            let pag = { hoje: 0, semantic: 0, semana: 0, mes: 0, ano: 0, total: 0 };
             let ranking = {};
 
             const corpo = document.getElementById('audit-body');
             corpo.innerHTML = '';
 
             data.sort((a,b) => new Date(a.vencimento) - new Date(b.vencimento)).forEach(item => {
-                const venci = new Date(item.vencimento + 'T12:00:00');
+                const dataDb = item.vencimento; 
+                const dataFormatada = dataDb.split('-').reverse().join('/'); 
+                const venci = new Date(dataDb + 'T12:00:00'); 
                 const dataPag = item.data_pagamento ? new Date(item.data_pagamento) : null;
                 const valor = item.valor_nominal;
                 
-                // Validação de Período
                 const isHoje = venci.toDateString() === hoje.toDateString();
                 const isSemana = getWeek(venci) === getWeek(hoje) && venci.getFullYear() === hoje.getFullYear();
                 const isMes = venci.getMonth() === hoje.getMonth() && venci.getFullYear() === hoje.getFullYear();
@@ -156,13 +153,11 @@
 
                 if (item.status === 'pago') {
                     pag.total += valor;
-                    // Lógica para Recebidos (usa data do pagamento se disponível, senão vencimento)
                     const refPag = dataPag || venci;
                     if (refPag.toDateString() === hoje.toDateString()) pag.hoje += valor;
                     if (getWeek(refPag) === getWeek(hoje) && refPag.getFullYear() === hoje.getFullYear()) pag.semana += valor;
                     if (refPag.getMonth() === hoje.getMonth() && refPag.getFullYear() === hoje.getFullYear()) pag.mes += valor;
                     if (refPag.getFullYear() === hoje.getFullYear()) pag.ano += valor;
-                    
                     ranking[item.cliente] = (ranking[item.cliente] || 0) + valor;
                 } else {
                     aRec.total += valor;
@@ -177,7 +172,7 @@
                             <td class="p-6">
                                 <span class="text-xs font-black text-white uppercase tracking-tighter">${item.cliente}</span><br>
                                 <span class="text-[9px] font-bold ${isVencido ? 'text-red-500 italic' : 'text-slate-500'}">
-                                    ${isVencido ? '⚠️ VENCIDO: ' : isHoje ? '🕒 VENCE HOJE: ' : 'VENCIMENTO: '} ${venci.toLocaleDateString()}
+                                    ${isVencido ? '⚠️ VENCIDO: ' : isHoje ? '🕒 VENCE HOJE: ' : 'VENCIMENTO: '} ${dataFormatada}
                                 </span>
                             </td>
                             <td class="p-6 text-right font-mono font-bold text-sm">R$ ${valor.toLocaleString('pt-BR', {minimumFractionDigits:2})}</td>
@@ -190,7 +185,6 @@
                 }
             });
 
-            // Atualização dos Painéis com 100% de funcionamento
             const upd = (id, val) => { if(document.getElementById(id)) document.getElementById(id).innerText = "R$ " + val.toLocaleString('pt-BR', {minimumFractionDigits:2}); };
             upd('rec-hoje', aRec.hoje); upd('rec-semana', aRec.semana); upd('rec-mes', aRec.mes); upd('rec-ano', aRec.ano); upd('rec-total', aRec.total);
             upd('pago-hoje', pag.hoje); upd('pago-semana', pag.semana); upd('pago-mes', pag.mes); upd('pago-ano', pag.ano); upd('pago-total', pag.total);
@@ -198,24 +192,20 @@
             renderChart('chartFast', ranking);
         }
 
-        // GRÁFICO COM INSIGHT DE IA INTEGRADO
         function renderChart(id, dados) {
             const ctx = document.getElementById(id).getContext('2d');
             const sorted = Object.entries(dados).sort((a,b) => b[1]-a[1]).slice(0,5);
-            
             if(window.mainChart) window.mainChart.destroy();
             window.mainChart = new Chart(ctx, {
                 type: 'bar',
                 data: { labels: sorted.map(x => x[0].substring(0,12)), datasets: [{ data: sorted.map(x => x[1]), backgroundColor: '#0062ff', borderRadius: 5 }] },
                 options: { indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { ticks: { color: '#64748b', font: { size: 9, weight: 'bold' } } } } }
             });
-
-            // Insight IA para o Gráfico
             const topCliente = sorted[0] ? sorted[0][0] : "N/A";
-            document.getElementById('ai-chart-insight').innerText = `IA ANALYSIS: O cliente ${topCliente} detém a maior concentração de liquidez no período. Sugerimos priorizar o suporte técnico para este parceiro.`;
+            document.getElementById('ai-chart-insight').innerText = `IA ANALYSIS: O cliente ${topCliente} detém a maior concentração de liquidez no período.`;
         }
 
-        // CAPTURA DE PDF CORRIGIDA (ONDE PEGA O NOME E VENCIMENTO)
+        // MOTOR DE PROCESSAMENTO DE PDF ATUALIZADO (O "DEPOIS")
         async function processarPDFDinamico(input) {
             const file = input.files[0];
             if (!file) return;
@@ -225,37 +215,47 @@
                 const pdf = await pdfjsLib.getDocument(typedarray).promise;
                 const page = await pdf.getPage(1);
                 const textContent = await page.getTextContent();
+                const fullText = textContent.items.map(s => s.str).join(' ');
                 const lines = textContent.items.map(s => s.str);
-                const fullText = lines.join(' ');
                 
-                // 1. Onde pega o Vencimento (Melhorado para ignorar a data de emissão)
-let vencimentoISO = "";
-const todasDatas = fullText.match(/(\d{2}\/\d{2}\/\d{4})/g); 
+                // --- ATUALIZAÇÃO: BUSCA POR RÓTULO ESPECÍFICO ---
+                let vencimentoISO = "";
+                const labelVencimento = "DATA DE VENCIMENTO";
+                const textoLimpo = fullText.toUpperCase();
 
-if (todasDatas && todasDatas.length >= 2) {
-    // Em boletos CrediSIS, o vencimento costuma ser a segunda ou última data que aparece no texto
-    // Pegamos a última para garantir que ignoramos a data de emissão/processamento
-    vencimentoISO = todasDatas[todasDatas.length - 1].split('/').reverse().join('-');
-} else if (todasDatas) {
-    vencimentoISO = todasDatas[0].split('/').reverse().join('-');
-}
+                if (textoLimpo.includes(labelVencimento)) {
+                    // Busca a data (DD/MM/AAAA) que aparece logo após o termo "DATA DE VENCIMENTO"
+                    const parteAposLabel = fullText.substring(textoLimpo.indexOf(labelVencimento) + labelVencimento.length);
+                    const dataMatch = parteAposLabel.match(/(\d{2}\/\d{2}\/\d{4})/);
+                    
+                    if (dataMatch) {
+                        vencimentoISO = dataMatch[0].split('/').reverse().join('-');
+                    }
+                }
 
-                // 2. Onde pega o Valor
+                // Fallback de segurança caso o rótulo não seja encontrado
+                if (!vencimentoISO) {
+                    const todasDatas = fullText.match(/(\d{2}\/\d{2}\/\d{4})/g);
+                    if (todasDatas) {
+                        vencimentoISO = todasDatas[0].split('/').reverse().join('-');
+                    }
+                }
+
+                // Captura de Valor
                 const valorMatch = fullText.match(/(\d{1,3}(\.\d{3})*,\d{2})/);
                 const valor = valorMatch ? parseFloat(valorMatch[0].replace('.','').replace(',','.')) : 0;
 
-                // 3. Onde pega o Cliente (Melhorado para buscar após "Pagador")
+                // Captura de Cliente
                 let cliente = "CLIENTE NOVO";
                 for (let i = 0; i < lines.length; i++) {
                     if (lines[i].toUpperCase().includes("PAGADOR") || lines[i].toUpperCase().includes("NOME DO PAGADOR")) {
-                        // O nome geralmente está 1 ou 2 linhas abaixo ou na mesma linha após ":"
                         cliente = (lines[i+1] || lines[i]).split(":")[1] || lines[i+1] || lines[i+2];
                         cliente = cliente.trim().split("/")[0].replace(/[0-9]/g, '').trim().toUpperCase();
                         break;
                     }
                 }
 
-                // 4. Onde pega o Código de Barra
+                // Captura de Código de Barras
                 const regexLinha = /\d{5}\.\d{5}\s\d{5}\.\d{6}\s\d{5}\.\d{6}\s\d\s\d{14}/;
                 const codigo = fullText.match(regexLinha)?.[0] || "";
 
@@ -272,31 +272,12 @@ if (todasDatas && todasDatas.length >= 2) {
             reader.readAsArrayBuffer(file);
         }
 
-        // RELATÓRIO REUNIÃO - MANTIDO E INTEGRADO
         async function gerarRelatorioBI() {
             const { data } = await _db.from('controle_financeiro').select('*');
             const win = window.open("", "_blank");
             const pagos = data.filter(x => x.status === 'pago');
             const totalPago = pagos.reduce((a,b)=>a+b.valor_nominal,0);
-            
-            win.document.write(`
-                <html><head><title>EURO DIESEL | RELATÓRIO MASTER</title>
-                <script src="https://cdn.tailwindcss.com"><\/script>
-                <style>body{background:#05070a;color:#fff;font-family:'Inter',sans-serif;}</style></head>
-                <body class="p-20">
-                    <h1 class="text-4xl font-black italic mb-10">EURO DIESEL - RELATÓRIO DE REUNIÃO</h1>
-                    <div class="grid grid-cols-2 gap-10 mb-10">
-                        <div class="p-10 bg-zinc-900 rounded-3xl border border-zinc-800">
-                            <p class="text-xs uppercase text-zinc-500 font-bold">Liquidez Realizada</p>
-                            <p class="text-5xl font-black text-emerald-500 mt-2">R$ ${totalPago.toLocaleString('pt-BR')}</p>
-                        </div>
-                        <div class="p-10 bg-zinc-900 rounded-3xl border border-zinc-800">
-                            <p class="text-xs uppercase text-zinc-500 font-bold">Análise IA Master</p>
-                            <p class="text-lg italic mt-2">"Fluxo de caixa operando com eficiência. Manter cobrança ativa para boletos acima de 5 dias."</p>
-                        </div>
-                    </div>
-                </body></html>
-            `);
+            win.document.write(`<html><body style="background:#05070a;color:#fff;font-family:sans-serif;padding:50px;"><h1>RELATÓRIO EURO DIESEL</h1><h2>Total Recebido: R$ ${totalPago.toLocaleString('pt-BR')}</h2></body></html>`);
         }
 
         carregarContabilidade();
