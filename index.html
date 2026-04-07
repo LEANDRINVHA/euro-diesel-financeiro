@@ -105,7 +105,7 @@
 
         function cobrarCliente(cliente, valor, vencimento, codigo) {
             const infoCodigo = codigo ? `\n\n*LINHA DIGITÁVEL PARA PAGAMENTO:*\n${codigo}` : "";
-            const msg = `*EURO DIESEL | DEPARTAMENTO FINANCEIRO* 📊\n\nPrezado(a) *${cliente}*,\n\nSou o *Leandrin®*, Gerente Financeiro Master da Euro Diesel. Identificamos que o título de *R$ ${valor}*, com vencimento em *${vencimento}*, ainda consta em aberto.\n\n${infoCodigo}\n\n*SEGURANÇA:* Verifique se o beneficiário final é *EURO DIESEL*.\n\nAtenciosamente,\n*Leandrin®*`;
+            const msg = `*FINANCEIRO | EURO DIESEL®* \n\nPrezado(a) *${cliente}*,\n\nIdentificamos em nosso sistema que o título no valor de *R$ ${valor}*, com vencimento em *${vencimento}*, ainda consta em aberto.\n\n${infoCodigo}\n\n*PROTOCOLO DE SEGURANÇA:*\n\Antes de confirmar a operação, valide rigorosamente se o beneficiário final é:\n\ *LR COMÉRCIO E TRANSPORTES | EURO DIESEL®*.\n\nAtenciosamente,\n*Leandro® | Gerente Financeiro*`;
             window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
         }
 
